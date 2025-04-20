@@ -61,8 +61,8 @@ frontend/
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/your-username/heysalad-frontend.git
-   cd heysalad-frontend
+   git clone https://github.com/Hey-Salad/Tasha.git
+   cd Tasha
    ```
 
 2. Install dependencies
@@ -205,7 +205,7 @@ HeySalad helps track and reduce food waste by:
 
 ## 📄 License
 
-[Specify your license, e.g., MIT License]
+MIT License
 
 ## 🤝 Contributing
 
@@ -217,12 +217,13 @@ HeySalad helps track and reduce food waste by:
 
 ## 📞 Contact
 
-[Your Name/Organization]
-- Email: contact@heysalad.com
-- Project Link: https://github.com/your-username/heysalad-frontend
+Peter - HeySalad Team
+- Email: peter@heysalad.io
+- Project Link: https://github.com/Hey-Salad/Tasha
 
 ## 🙏 Acknowledgements
 
 - Polkadot Hackathon
 - Azure AI Services
+- ElevenLabs Voice AI
 - Open-source community
