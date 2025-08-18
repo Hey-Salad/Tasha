@@ -1,0 +1,9 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Any additional global styles can go here */
+:root {
+  /* You can define custom color variables here */
+}
