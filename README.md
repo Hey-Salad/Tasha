@@ -1,228 +1,371 @@
-# HeySalad ® Tasha: Food Waste Reduction Platform
+# HeySalad ® Tasha 🥗🤖
 
-## 🥗 Project Overview
+## Conversational AI Agent for Food Waste Reduction on Polkadot
 
-HeySalad is a blockchain-powered application designed to incentivize and track food waste reduction. Users can log their food waste reduction efforts, earn tokens, and contribute to environmental sustainability.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Polkadot](https://img.shields.io/badge/Built%20on-Polkadot-E6007A)](https://polkadot.network/)
+[![Fast Grant](https://img.shields.io/badge/Polkadot-Fast%20Grant-success)](https://github.com/Polkadot-Fast-Grants/apply)
 
-## 🌟 Features
+> **Making sustainability engaging through voice interaction and blockchain rewards**
 
-- Wallet Connection
-- Food Waste Logging
-- AI-Powered Verification
-- Token Rewards System
-- Transaction History
-- Environmental Impact Tracking
+HeySalad ® Tasha is an AI-powered voice assistant that helps users reduce food waste through natural conversation while earning blockchain rewards. Built during the EasyA Hackathon and funded by Polkadot Fast-Grants, it combines 11Labs voice technology with Microsoft Azure AI verification on Polkadot's Asset-Hub.
 
-## 📂 Project Structure
+## 🌟 Key Features
 
-```
-frontend/
-├── src/
-│   ├── app/
-│   │   └── page.tsx                 # Main application page
-│   │
-│   ├── components/
-│   │   ├── Sidebar.tsx              # Navigation sidebar
-│   │   ├── WalletConnectionButton.tsx # Wallet connection component
-│   │   │
-│   │   ├── Dashboard/
-│   │   │   ├── StatsCards.tsx       # Dashboard statistics cards
-│   │   │   └── RecentTransactions.tsx # Recent transactions display
-│   │   │
-│   │   ├── LogWaste/
-│   │   │   ├── WasteForm.tsx        # Form for logging waste reduction
-│   │   │   └── AIVerificationDisplay.tsx # AI verification result display
-│   │   │
-│   │   └── TransactionHistory.tsx   # Full transaction history view
-│   │
-│   ├── services/
-│   │   ├── ContractInteraction.ts   # Blockchain contract interactions
-│   │   └── AzureAIService.ts        # AI verification service
-│   │
-│   ├── types/
-│   │   └── index.ts                 # TypeScript type definitions
-│   │
-│   └── styles/
-│       └── globals.css              # Global styling
-│
-├── package.json
-└── README.md
-```
+- 🎙️ **Voice-First Interface** - Natural conversation with Tasha using 11Labs
+- 🪙 **Blockchain Rewards** - Earn FWT (Food Waste Tokens) on Polkadot Asset-Hub
+- 🤖 **AI Verification** - Microsoft Azure AI validates waste reduction claims
+- 🏦 **Bank Integration** - Monzo API for purchase verification
+- 📱 **Web dApp** - React/Next.js interface with wallet integration
+- 🌍 **Environmental Impact** - Track CO₂ emissions prevented
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js (v18+ recommended)
-- Metamask or compatible Web3 wallet
+- Node.js 18+ 
+- MetaMask or Polkadot.js wallet
 - Access to Asset-Hub Westend Testnet
 
 ### Installation
 
-1. Clone the repository
+1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/heysalad-frontend.git
-   cd heysalad-frontend
+   git clone https://github.com/Hey-Salad/Tasha.git
+   cd Tasha/frontend
    ```
 
-2. Install dependencies
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-3. Set up environment variables
-   Create a `.env.local` file with:
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env.local
    ```
-   NEXT_PUBLIC_CONTRACT_ADDRESS=your_contract_address
-   NEXT_PUBLIC_AZURE_AI_ENDPOINT=your_azure_ai_endpoint
+   
+   Add your API keys:
+   ```env
+   # Blockchain
+   NEXT_PUBLIC_CONTRACT_ADDRESS=your_fwt_contract_address
+   NEXT_PUBLIC_RPC_ENDPOINT=wss://westend-asset-hub-rpc.polkadot.io
+   
+   # Voice & AI Services
+   NEXT_PUBLIC_ELEVENLABS_API_KEY=your_elevenlabs_key
+   AZURE_AI_ENDPOINT=your_azure_endpoint
+   AZURE_AI_KEY=your_azure_key
+   
+   # Banking Integration
+   MONZO_CLIENT_ID=your_monzo_client_id
+   MONZO_CLIENT_SECRET=your_monzo_client_secret
    ```
 
-4. Run the development server
+4. **Run the development server**
    ```bash
    npm run dev
    ```
 
-## 🔧 Technologies Used
+5. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-- Next.js 14
-- React
-- TypeScript
-- Polkadot.js
-- Azure AI Services
-- Tailwind CSS (optional)
+## 🗣️ Voice Interface Usage
+
+### Starting a Conversation
+
+1. **Connect your wallet** using the wallet button in the top right
+2. **Click the microphone** icon or say "Hey Tasha"
+3. **Start logging waste reduction**:
+
+   ```
+   User: "Hey Tasha, I just donated 2kg of leftover food to the food bank"
+   Tasha: "That's amazing! I can help you log that donation. Can you tell me more about what you donated?"
+   User: "It was leftover pasta and bread from yesterday's dinner"
+   Tasha: "Perfect! I'll verify this and mint your FWT tokens. Can you take a photo for verification?"
+   ```
+
+### Voice Commands
+
+- `"Hey Tasha, log food waste reduction"`
+- `"What's my token balance?"`
+- `"Show me my recent transactions"`
+- `"Help me find a restaurant nearby"`
+
+## 💰 Token System (FWT)
+
+### How It Works
+
+1. **Log waste reduction** through voice or manual input
+2. **AI verification** analyzes your submission
+3. **Earn FWT tokens** minted directly to your wallet
+4. **Track impact** with environmental metrics
+
+### Token Economics
+
+- **Emission Rate**: 10 FWT per kg of food waste reduced
+- **Verification**: AI + optional manual review
+- **Rewards**: Instant minting to your wallet
+- **Utility**: Governance, staking, marketplace access
+
+### Smart Contract
+
+Our FWT token contract is deployed on Polkadot Asset-Hub:
+
+**Contract Address**: `[To be added after deployment]`
+
+**Key Functions**:
+- `logWasteReduction(uint256 amount, string actionType)` - Log and earn tokens
+- `getUserContribution(address user)` - Check total contributions
+- `balanceOf(address account)` - Check token balance
+
+## 🔗 Wallet Integration
+
+### Supported Wallets
+
+- **MetaMask** - Primary wallet support
+- **Polkadot.js** - Native Polkadot wallet
+- **SubWallet** - Mobile-friendly option
+
+### Connecting Your Wallet
+
+1. Install your preferred wallet extension
+2. Configure for Asset-Hub Westend Testnet:
+   - **Network**: Asset Hub Westend
+   - **RPC**: `wss://westend-asset-hub-rpc.polkadot.io`
+   - **Chain ID**: 1000
+
+3. Get testnet tokens:
+   - Visit [Westend Faucet](https://faucet.polkadot.io/)
+   - Request WND tokens for gas fees
+
+## 🏦 Bank Integration (Monzo)
+
+### Setup
+
+1. **Create Monzo Developer Account**
+   - Visit [Monzo Developers](https://developers.monzo.com/)
+   - Create an OAuth application
+
+2. **Configure OAuth Redirect**
+   ```
+   Redirect URI: http://localhost:3000/auth/monzo/callback
+   ```
+
+3. **Authentication Flow**
+   - Users click "Connect Monzo"
+   - OAuth flow redirects to Monzo
+   - Tokens stored securely for API calls
+
+### Purchase Verification
+
+The system automatically:
+- Fetches recent food-related transactions
+- Matches purchases with waste reduction claims
+- Provides additional verification context
+
+## 🧪 Testing
+
+### Running Tests
+
+```bash
+# Unit tests
+npm test
+
+# Smart contract tests
+cd ../contracts
+npx hardhat test
+
+# Integration tests
+npm run test:integration
+
+# Voice processing tests
+npm run test:voice
+```
+
+### Test Coverage
+
+- ✅ Smart contract functions
+- ✅ Voice processing pipeline
+- ✅ AI verification system
+- ✅ Wallet integration
+- ✅ Bank API interactions
+
+### Testing Guide
+
+1. **Local Development**
+   ```bash
+   npm run dev
+   npm test
+   ```
+
+2. **Smart Contract Testing**
+   ```bash
+   cd contracts
+   npx hardhat compile
+   npx hardhat test
+   ```
+
+3. **Voice Testing**
+   - Use test audio files in `/test/audio/`
+   - Mock 11Labs API responses
+   - Verify speech-to-text accuracy
+
+## 🏗️ Architecture
+
+### Frontend Structure
+
+```
+frontend/src/
+├── app/
+│   ├── page.tsx              # Main application
+│   ├── layout.tsx            # App layout
+│   └── api/ai/route.ts       # AI verification API
+├── components/
+│   ├── Dashboard/            # Dashboard components
+│   ├── LogWaste/            # Waste logging forms
+│   ├── Sidebar.tsx          # Navigation
+│   └── WalletConnectionButton.tsx
+├── services/
+│   ├── ElevenLabsService.ts  # Voice integration
+│   ├── ContractInteraction.ts # Blockchain calls
+│   ├── AzureAIService.ts    # AI verification
+│   └── MonzoService.ts      # Bank integration
+└── types/
+    └── index.ts             # TypeScript definitions
+```
+
+### Smart Contract
+
+```
+contracts/
+└── FoodWasteToken.sol       # ERC-20 token with waste logging
+```
+
+### Key Services
+
+1. **Voice Service** (`ElevenLabsService.ts`)
+   - Speech-to-text conversion
+   - Natural language processing
+   - Text-to-speech responses
+
+2. **Blockchain Service** (`ContractInteraction.ts`)
+   - Wallet connections
+   - Smart contract interactions
+   - Transaction management
+
+3. **AI Verification** (`AzureAIService.ts`)
+   - Image analysis
+   - Claim verification
+   - Confidence scoring
 
 ## 🌍 Environmental Impact
 
-HeySalad helps track and reduce food waste by:
-- Calculating CO2 emissions prevented
-- Incentivizing waste reduction
-- Providing transparent tracking
+### Calculations
 
-## 💡 How It Works
+- **Food Waste to CO₂**: 1kg food waste = 3.4kg CO₂ emissions
+- **Real-time Tracking**: Dashboard shows environmental impact
+- **Community Impact**: Leaderboards and achievements
 
-1. Connect your Web3 wallet
-2. Log food waste reduction activities
-3. Get AI verification
-4. Earn FWT (Food Waste Tokens)
-5. Track your environmental impact
+### Metrics Tracked
 
-## 🔒 Security
+- Total food waste reduced (grams)
+- CO₂ emissions prevented (kg)
+- FWT tokens earned
+- Community ranking
 
-- AI-powered verification
-- Blockchain transaction tracking
-- Secure wallet integration
+## 🔧 Development
 
-## 🚀 Long Term Roadmap
+### Project Scripts
 
-### 📍 Phase 1: Foundation (Q2-Q3 2025)
-- **Platform Launch**
-  - Complete MVP release on Asset-Hub Westend testnet
-  - Launch mainnet version on Polkadot ecosystem
-  - Establish core token economics and reward mechanisms
-- **User Acquisition**
-  - Partner with 3-5 food service businesses for pilot programs
-  - Launch targeted marketing campaign for environmentally conscious consumers
-  - Achieve 5,000 active platform users
-- **Technology Refinement**
-  - Enhance AI verification algorithm accuracy to 95%+
-  - Implement secure multi-wallet support
-  - Optimize smart contract efficiency
+```bash
+# Development
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
 
-### 📍 Phase 2: Expansion (Q4 2025 - Q2 2026)
-- **Business Integration**
-  - Develop B2B solutions for restaurants and grocery chains
-  - Create API for seamless integration with inventory management systems
-  - Launch business dashboard with analytics and reporting
-- **Mobile Experience**
-  - Release native mobile applications (iOS & Android)
-  - Implement QR code scanning for quick waste logging
-  - Add push notifications for reminders and rewards
-- **Community Building**
-  - Introduce community challenges and leaderboards
-  - Implement social sharing features
-  - Launch ambassador program for platform evangelists
-- **Token Utility Enhancement**
-  - Establish token staking mechanism with additional rewards
-  - Create governance voting for platform development decisions
-  - Partner with sustainable brands for token redemption options
+# Testing
+npm test             # Run unit tests
+npm run test:watch   # Watch mode
+npm run test:coverage # Coverage report
 
-### 📍 Phase 3: Ecosystem Development (Q3 2026 - Q1 2027)
-- **Advanced AI Integration**
-  - Implement computer vision for automated waste recognition and verification
-  - Develop predictive analytics for waste prevention recommendations
-  - Create personalized sustainability plans based on user behavior
-- **Supply Chain Integration**
-  - Launch traceability features for food products
-  - Develop supplier verification and certification system
-  - Create incentives for sustainable sourcing
-- **Marketplace Launch**
-  - Build P2P marketplace for surplus food exchange
-  - Implement smart contracts for automated marketplace transactions
-  - Create reputation system for marketplace participants
-- **Educational Platform**
-  - Develop sustainability learning modules
-  - Create certification program for food waste reduction
-  - Partner with educational institutions
+# Smart Contracts
+npm run contract:compile  # Compile contracts
+npm run contract:deploy   # Deploy to testnet
+npm run contract:verify   # Verify on explorer
+```
 
-### 📍 Phase 4: Global Expansion (Q2 2027 - Q4 2027)
-- **International Rollout**
-  - Localize platform for 10+ major languages
-  - Adapt verification systems for regional food practices
-  - Establish regional partnerships in Asia, Europe, and South America
-- **Cross-Chain Integration**
-  - Implement bridges to other major blockchain ecosystems
-  - Create cross-chain liquidity pools
-  - Develop interoperability with other sustainability tokens
-- **Enterprise Solutions**
-  - Launch enterprise-grade waste management system
-  - Develop customizable corporate sustainability programs
-  - Create ESG reporting tools for corporate clients
+### Contributing
 
-### 📍 Phase 5: Sustainability Revolution (2028 and beyond)
-- **Regulatory Integration**
-  - Work with governments on sustainability certification standards
-  - Develop carbon credit integration and verification
-  - Create tax incentive reporting systems
-- **Advanced Analytics Platform**
-  - Launch global food waste reduction analytics dashboard
-  - Provide real-time impact visualization
-  - Generate predictive models for global waste reduction strategies
-- **Decentralized Governance**
-  - Transition to fully decentralized platform governance
-  - Implement quadratic voting for development priorities
-  - Create decentralized grant system for sustainability initiatives
-- **Expansion Beyond Food**
-  - Explore additional waste reduction verticals (clothing, electronics, etc.)
-  - Develop integrations with other sustainability platforms
-  - Create unified sustainability score across consumption categories
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
-### 🌱 Key Metrics & Goals
-- **User Adoption**: 1 million active users by end of 2027
-- **Environmental Impact**: Document prevention of 500,000 tons of food waste by 2028
-- **Business Integration**: 10,000+ businesses utilizing platform by 2028
-- **Token Economics**: Achieve stable token value with predictable growth tied to platform usage
-- **Sustainability Verification**: Become recognized certification standard for food waste reduction initiatives
+### Development Workflow
+
+1. **Backend Changes**: Update services in `/src/services/`
+2. **Frontend Changes**: Update components in `/src/components/`
+3. **Contract Changes**: Update `/contracts/FoodWasteToken.sol`
+4. **Tests**: Add tests for all new functionality
+
+## 📊 Roadmap
+
+### ✅ Milestone 1 (Current)
+- [x] Basic frontend with wallet integration
+- [x] Smart contract development
+- [ ] 11Labs voice integration
+- [ ] Monzo API integration
+- [ ] AI verification system
+
+### 🚧 Milestone 2 (Next)
+- [ ] Advanced AI verification
+- [ ] Location-based features
+- [ ] NFT achievements
+- [ ] Community leaderboards
+
+### 🔮 Future Plans
+- Mobile applications (iOS/Android)
+- Food delivery integrations
+- Cross-chain compatibility
+- Enterprise solutions
+
+## 🤝 Community & Support
+
+### Links
+
+- 🌐 **Website**: [https://heysalad.io/](https://heysalad.io/)
+- 🤖 **AI Platform**: [https://ai.heysalad.app/](https://ai.heysalad.app/)
+- 🧑‍⚕️ **Nutritionist Platform**: [https://nutritionists.heysalad.app/](https://nutritionists.heysalad.app/)
+- 📱 **Previous dApp**: [https://dapp.saladhr.com/waste](https://dapp.saladhr.com/waste)
+
+### Contact
+
+- **Email**: peter@heysalad.io
+- **GitHub**: [@chilu18](https://github.com/chilu18)
+- **LinkedIn**: [Peter Machona](https://www.linkedin.com/in/chilumba-peter-machona/)
+
+### Grant Information
+
+This project is funded by the **Polkadot Fast-Grants Programme**:
+- **Grant Amount**: $10,000 USD
+- **Duration**: 4 weeks
+- **Focus**: Voice technology + blockchain integration
 
 ## 📄 License
 
-[Specify your license, e.g., MIT License]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Contributing
+## 🙏 Acknowledgments
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+- **Polkadot Fast-Grants Programme** for funding
+- **EasyA Hackathon** for the initial platform
+- **11Labs** for voice technology
+- **Microsoft Azure** for AI services
+- **Polkadot community** for ongoing support
 
-## 📞 Contact
+---
 
-[Your Name/Organization]
-- Email: contact@heysalad.com
-- Project Link: https://github.com/your-username/heysalad-frontend
+**Making food waste reduction conversational, verifiable, and rewarding.**
 
-## 🙏 Acknowledgements
-
-- Polkadot Hackathon
-- Azure AI Services
-- Open-source community
+*Built with ❤️ for the Polkadot ecosystem*
