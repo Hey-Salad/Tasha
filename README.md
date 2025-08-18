@@ -32,7 +32,11 @@ HeySalad ® Tasha is an AI-powered voice assistant that helps users reduce food 
 1. **Clone the repository**
    ```bash
    git clone https://github.com/Hey-Salad/Tasha.git
+<<<<<<< HEAD
    cd Tasha/frontend
+=======
+   cd Tasha
+>>>>>>> 8049455715a83d733b9573a8b42a2d0c1b028c2c
    ```
 
 2. **Install dependencies**
@@ -354,7 +358,11 @@ This project is funded by the **Polkadot Fast-Grants Programme**:
 
 ## 📄 License
 
+<<<<<<< HEAD
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+=======
+MIT License
+>>>>>>> 8049455715a83d733b9573a8b42a2d0c1b028c2c
 
 ## 🙏 Acknowledgments
 
@@ -366,6 +374,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
+<<<<<<< HEAD
 **Making food waste reduction conversational, verifiable, and rewarding.**
 
 *Built with ❤️ for the Polkadot ecosystem*
+=======
+Peter - HeySalad Team
+- Email: peter@heysalad.io
+- Project Link: https://github.com/Hey-Salad/Tasha
+
+## 🙏 Acknowledgements
+
+- Polkadot Hackathon
+- Azure AI Services
+- ElevenLabs Voice AI
+- Open-source community
+>>>>>>> 8049455715a83d733b9573a8b42a2d0c1b028c2c
