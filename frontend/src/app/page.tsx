@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 import React, { useState, useEffect } from 'react';
 
 // Import Components
@@ -7,103 +6,39 @@ import Sidebar from '../components/Sidebar';
 import WalletConnectionButton from '../components/WalletConnectionButton';
 import StatsCards from '../components/Dashboard/StatsCards';
 import RecentTransactions from '../components/Dashboard/RecentTransactions';
-import WasteForm from '../components/LogWaste/WasteForm';
 import TransactionHistory from '../components/TransactionHistory';
+import WasteForm from '../components/LogWaste/WasteForm';
 import MonzoConnection from '../components/MonzoConnection';
 
-// Import Types
+// Import Icons
 import { 
-  Account, 
-  Transaction, 
-  WasteType 
-} from '../types/index';
+  Trash2, 
+  CreditCard, 
+  History,
+  Zap,
+  CheckCircle,
+  XCircle,
+  Globe
+} from 'lucide-react';
 
-// Import Monzo Hook
+// Import Hooks and Services
 import { useMonzo } from '../hooks/useMonzo';
 
-// Mock services (to be replaced with actual implementations)
-class MockTokenService {
-  async connect() {
-    return "0xb190...38c5";
-  }
-  
-  async getTokenBalance() {
-    return "1000000";
-  }
-  
-  async logWasteReduction(amount: number, type: WasteType) {
-    return true;
-  }
-}
-
-class MockAIService {
-  async verifyFoodWasteReduction(description: string, amount: number) {
-    return {
-      isVerified: true,
-      feedback: "Verification successful"
-    };
-  }
-}
-
-interface MonzoTokens {
-  access_token: string;
-  user_id: string;
-  expires_in: number;
-}
-
-export default function Page() {
-  // State variables for wallet/blockchain
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
-  const [tokenBalance, setTokenBalance] = useState("0");
-  const [tokenService, setTokenService] = useState<MockTokenService | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("dashboard");
-  
-  // Mobile UI state
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+export default function HeySaladDashboard() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  
-  // State variables for AI functionality
-  const [aiService, setAiService] = useState<MockAIService | null>(null);
-  
-  // Monzo integration state
-  const [monzoConnected, setMonzoConnected] = useState(false);
-  const [monzoTokens, setMonzoTokens] = useState<MonzoTokens | null>(null);
-  
-  // Monzo hook
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [tokenBalance, setTokenBalance] = useState<string>('0');
+  const [transactions, setTransactions] = useState<any[]>([]);
+
+  // Monzo integration
   const { 
-    isConnected: monzoIsConnected, 
-    matchWasteReduction, 
-    getFoodTransactions 
+    isConnected: isMonzoConnected,
+    error: monzoError
   } = useMonzo();
-  
-  // Mock transaction history
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    { 
-      date: '2025-04-15', 
-      type: 'donation', 
-      amount: 2500, 
-      tokens: 25, 
-      status: 'confirmed' 
-    },
-    { 
-      date: '2025-04-12', 
-      type: 'used-before-expiry', 
-      amount: 750, 
-      tokens: 7.5, 
-      status: 'confirmed' 
-    },
-    { 
-      date: '2025-04-08', 
-      type: 'efficient-delivery', 
-      amount: 1800, 
-      tokens: 18, 
-      status: 'confirmed' 
-    }
-  ]);
-  
-  // Check if mobile on mount and window resize
+
+  // Check for mobile and handle URL params
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -112,464 +47,539 @@ export default function Page() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
+    // Check URL params for tab switching
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+    
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
-  // Initialize services
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setTokenService(new MockTokenService());
-      setAiService(new MockAIService());
-    }
-  }, []);
-  
-  // Handle Monzo connection status change
-  const handleMonzoConnectionChange = (connected: boolean, tokens?: MonzoTokens) => {
-    setMonzoConnected(connected);
-    setMonzoTokens(tokens || null);
-    
-    if (connected) {
-      console.log('Monzo connected successfully!');
-    } else {
-      console.log('Monzo disconnected');
-    }
-  };
-  
-  // Connect to wallet
-  const connectWallet = async () => {
-    if (!tokenService) return;
-    
-    setIsConnecting(true);
-    
-    try {
-      const address = await tokenService.connect();
-      
-      if (address) {
-        const connectedAccount: Account = {
-          address: address,
-          meta: {
-            name: `${address.slice(0, 6)}...${address.slice(-4)}`,
-            source: 'wallet'
-          }
-        };
-        
-        setSelectedAccount(connectedAccount);
-        setIsConnected(true);
-        
-        // Fetch token balance
-        refreshBalance();
-      }
-    } catch (error) {
-      console.error("Error connecting wallet:", error);
-      alert("Please make sure you have MetaMask installed and connected to Asset-Hub Westend Testnet");
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-  
-  // Refresh token balance
-  const refreshBalance = async () => {
-    if (!tokenService) return;
-    
-    try {
-      const balance = await tokenService.getTokenBalance();
-      setTokenBalance(balance);
-    } catch (error) {
-      console.error("Error refreshing balance:", error);
-    }
-  };
 
-  // Enhanced function to log waste reduction with Monzo verification
-  const logWasteReduction = async (
-    amount: number, 
-    type: WasteType, 
-    description: string
-  ): Promise<void> => {
-    if (!selectedAccount || !tokenService || !aiService) {
-      alert('Please connect your wallet first');
-      return;
-    }
-    
-    try {
-      let verificationDetails = {
-        aiVerified: false,
-        monzoMatched: false,
-        confidence: 0.5,
-        monzoTransactions: [] as any[]
-      };
-
-      // AI Verification
-      const aiVerification = await aiService.verifyFoodWasteReduction(
-        description, 
-        amount
-      );
-      
-      if (!aiVerification.isVerified) {
-        alert('AI Verification Failed: ' + aiVerification.feedback);
-        return;
-      }
-      
-      verificationDetails.aiVerified = true;
-      verificationDetails.confidence = 0.7; // Base confidence for AI verification
-
-      // Monzo Verification (if connected)
-      if (monzoConnected && monzoTokens) {
-        try {
-          const matchResult = await matchWasteReduction(
-            new Date().toISOString().split('T')[0],
-            description
-          );
-          
-          if (matchResult.potentialMatches.length > 0) {
-            verificationDetails.monzoMatched = true;
-            verificationDetails.monzoTransactions = matchResult.potentialMatches;
-            verificationDetails.confidence = Math.max(verificationDetails.confidence, matchResult.confidence);
-            
-            console.log('Monzo verification found matching transactions:', matchResult);
-          }
-        } catch (monzoError) {
-          console.error('Monzo verification failed:', monzoError);
-          // Continue without Monzo verification
-        }
-      }
-      
-      const success = await tokenService.logWasteReduction(amount, type);
-      
-      if (success) {
-        // Calculate bonus tokens based on verification confidence
-        const baseTokens = amount / 100;
-        const bonusMultiplier = verificationDetails.monzoMatched ? 1.5 : 1.0;
-        const finalTokens = baseTokens * bonusMultiplier;
-        
-        let alertMessage = `Successfully logged ${amount}g of food waste reduction!\n`;
-        alertMessage += `Earned ${finalTokens.toFixed(1)} FWT tokens`;
-        
-        if (verificationDetails.monzoMatched) {
-          alertMessage += `\n🎉 Bonus! Monzo verification found ${verificationDetails.monzoTransactions.length} matching transaction(s)`;
-        }
-        
-        if (verificationDetails.confidence > 0.8) {
-          alertMessage += `\n✅ High confidence verification (${Math.round(verificationDetails.confidence * 100)}%)`;
-        }
-        
-        alert(alertMessage);
-        
-        // Add to transaction history
-        const newTransaction: Transaction = {
-          date: new Date().toISOString().split('T')[0],
-          type: type,
-          amount: amount,
-          tokens: finalTokens,
-          status: 'confirmed'
-        };
-        setTransactions([newTransaction, ...transactions]);
-        
-        refreshBalance();
-      }
-    } catch (error) {
-      console.error("Error logging waste reduction:", error);
-      alert("Transaction failed. Please check your wallet has sufficient WND for gas.");
-    }
-  };
-
-  // Get the total waste reduction
+  // Mock data - replace with real data fetching
   const getTotalWasteReduction = () => {
-    return transactions.reduce((total, tx) => total + tx.amount, 0);
+    return transactions.reduce((total, transaction) => {
+      return total + (transaction.wasteAmount || 0);
+    }, 0);
   };
 
-  // Mobile menu toggle
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
+  // Mock functions for components
+  const handleLogWasteReduction = async (amount: number, type: any, description: string): Promise<void> => {
+    // Implementation for logging waste reduction
+    console.log('Logging waste reduction:', { amount, type, description });
   };
 
-  // Close sidebar when tab changes on mobile
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (isMobile) {
-      setSidebarOpen(false);
-    }
+  const handleConnectWallet = async (): Promise<void> => {
+    // Implementation for connecting wallet
+    console.log('Connecting wallet...');
   };
 
-  // Get page title
-  const getPageTitle = () => {
+  // Main layout styles
+  const mainLayoutStyle: React.CSSProperties = {
+    display: 'flex',
+    minHeight: '100vh',
+    background: '#000000',
+    fontFamily: 'Figtree, sans-serif',
+    maxWidth: '100vw',
+    overflowX: 'hidden'
+  };
+
+  const contentAreaStyle: React.CSSProperties = {
+    flex: 1,
+    padding: isMobile ? '16px' : '32px',
+    paddingLeft: isMobile ? '16px' : '40px',
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    background: '#000000',
+    minWidth: 0
+  };
+
+  const mobileHeaderStyle: React.CSSProperties = {
+    display: isMobile ? 'flex' : 'none',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '24px',
+    padding: '16px 0',
+    borderBottom: '2px solid #ffd0cd'
+  };
+
+  const hamburgerStyle: React.CSSProperties = {
+    background: 'linear-gradient(135deg, #ed4c4c 0%, #faa09a 100%)',
+    border: 'none',
+    borderRadius: '12px',
+    padding: '12px',
+    color: 'white',
+    fontSize: '20px',
+    cursor: 'pointer',
+    boxShadow: '0 4px 12px rgba(237, 76, 76, 0.3)'
+  };
+
+  const logoMobileStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  };
+
+  const overlayStyle: React.CSSProperties = {
+    display: isMobile && isSidebarOpen ? 'block' : 'none',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 998
+  };
+
+  const sidebarContainerStyle: React.CSSProperties = {
+    transform: isMobile ? (isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
+    transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    position: isMobile ? 'fixed' : 'relative',
+    zIndex: 999,
+    height: isMobile ? '100vh' : 'auto'
+  };
+
+  const renderTabContent = () => {
     switch (activeTab) {
-      case 'dashboard': return 'Dashboard';
-      case 'log-waste': return 'Log Waste Reduction';
-      case 'history': return 'Transaction History';
-      case 'monzo': return 'Banking Integration';
-      default: return 'Dashboard';
-    }
-  };
-
-  return (
-    <div style={{ 
-      display: 'flex', 
-      minHeight: '100vh',
-      backgroundColor: '#000000',
-      position: 'relative'
-    }}>
-      {/* Mobile Overlay */}
-      {isMobile && sidebarOpen && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 998
-          }}
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div style={{
-        position: isMobile ? 'fixed' : 'relative',
-        left: isMobile ? (sidebarOpen ? '0' : '-220px') : '0',
-        top: 0,
-        height: '100vh',
-        transition: 'left 0.3s ease',
-        zIndex: 999
-      }}>
-        <Sidebar 
-          activeTab={activeTab} 
-          setActiveTab={handleTabChange} 
-        />
-      </div>
-      
-      {/* Main Content */}
-      <div style={{ 
-        flex: 1, 
-        padding: isMobile ? '10px 15px' : '20px 30px', 
-        overflow: 'auto', 
-        color: '#ffffff',
-        marginLeft: isMobile ? '0' : '0'
-      }}>
-        {/* Mobile Header */}
-        {isMobile && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '20px',
-            padding: '10px 0'
-          }}>
-            <button
-              onClick={toggleSidebar}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#ffffff',
-                fontSize: '24px',
-                cursor: 'pointer',
-                padding: '5px'
-              }}
-            >
-              ☰
-            </button>
-            <h1 style={{ 
-              fontSize: '18px', 
-              fontWeight: 'bold', 
-              margin: 0,
-              textAlign: 'center',
-              flex: 1
-            }}>
-              HeySalad 🥗
-            </h1>
-            <div style={{ width: '34px' }} /> {/* Spacer for centering */}
-          </div>
-        )}
-
-        {/* Header */}
-        <header style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: isMobile ? 'flex-start' : 'center',
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: isMobile ? '15px' : '0',
-          padding: '10px 0 20px 0',
-          borderBottom: '1px solid #333333',
-          marginBottom: '20px'
-        }}>
-          <h2 style={{ 
-            fontSize: isMobile ? '1.25rem' : '1.5rem', 
-            fontWeight: 'bold', 
-            color: '#ffffff',
-            margin: 0
-          }}>
-            {getPageTitle()}
-          </h2>
-          
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '10px',
-            flexWrap: 'wrap',
-            width: isMobile ? '100%' : 'auto'
-          }}>
-            {/* Monzo Connection Status */}
-            {monzoConnected && (
-              <div style={{ 
-                padding: '5px 10px', 
-                backgroundColor: '#28a745', 
-                borderRadius: '4px', 
-                fontSize: isMobile ? '11px' : '12px',
-                color: 'white',
-                whiteSpace: 'nowrap'
-              }}>
-                💳 Monzo Connected
-              </div>
-            )}
+      case 'dashboard':
+        return (
+          <>
+            <DashboardHeader 
+              walletAddress={walletAddress}
+              isMonzoConnected={isMonzoConnected}
+              tokenBalance={tokenBalance}
+              onConnectWallet={handleConnectWallet}
+            />
             
-            <div style={{ 
-              width: isMobile ? '100%' : 'auto'
+            <StatsCards
+              tokenBalance={tokenBalance}
+              getTotalWasteReduction={getTotalWasteReduction}
+            />
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(400px, 1fr))',
+              gap: '24px'
             }}>
-              <WalletConnectionButton 
-                isConnected={isConnected}
-                isConnecting={isConnecting}
-                selectedAccount={selectedAccount}
-                tokenBalance={tokenBalance}
-                connectWallet={connectWallet}
-              />
-            </div>
-          </div>
-        </header>
-        
-        {/* Content Area */}
-        <div style={{
-          maxWidth: '100%',
-          overflow: 'hidden'
-        }}>
-          {/* Dashboard Tab */}
-          {activeTab === 'dashboard' && (
-            <div>
-              <StatsCards 
-                tokenBalance={tokenBalance} 
-                getTotalWasteReduction={getTotalWasteReduction} 
-              />
-              
-              <RecentTransactions 
+              <RecentTransactions
                 transactions={transactions}
                 setActiveTab={setActiveTab}
               />
               
-              {/* Quick Monzo Stats */}
-              {monzoConnected && (
-                <div style={{
-                  backgroundColor: '#1a1a1a',
-                  border: '1px solid #333',
-                  borderRadius: '8px',
-                  padding: isMobile ? '15px' : '20px',
-                  marginTop: '20px'
-                }}>
-                  <h3 style={{ 
-                    marginBottom: '10px',
-                    fontSize: isMobile ? '16px' : '18px'
-                  }}>
-                    🏦 Banking Integration Status
-                  </h3>
-                  <p style={{ 
-                    color: '#28a745', 
-                    margin: 0,
-                    fontSize: isMobile ? '14px' : '16px'
-                  }}>
-                    ✅ Monzo account connected - Enhanced verification enabled
-                  </p>
-                </div>
-              )}
+              <QuickActions setActiveTab={setActiveTab} />
             </div>
-          )}
-          
-          {/* Log Waste Tab */}
-          {activeTab === 'log-waste' && (
-            <div>
-              <WasteForm 
-                isConnected={isConnected}
-                logWasteReduction={logWasteReduction}
-              />
-              
-              {/* Monzo Integration Notice */}
-              {!monzoConnected && (
-                <div style={{
-                  backgroundColor: '#1a1a1a',
-                  border: '1px solid #ffc107',
-                  borderRadius: '8px',
-                  padding: isMobile ? '15px' : '20px',
-                  marginTop: '20px',
-                  color: '#ffc107'
-                }}>
-                  <h4 style={{ 
-                    margin: '0 0 10px 0',
-                    fontSize: isMobile ? '16px' : '18px'
-                  }}>
-                    💡 Tip: Connect your Monzo account for enhanced verification
-                  </h4>
-                  <p style={{ 
-                    margin: '10px 0', 
-                    fontSize: isMobile ? '13px' : '14px',
-                    lineHeight: '1.4'
-                  }}>
-                    Linking your Monzo account allows us to verify your food purchases and provide bonus tokens for verified waste reduction activities.
-                  </p>
-                  <button 
-                    onClick={() => handleTabChange('monzo')}
-                    style={{
-                      padding: isMobile ? '8px 12px' : '8px 16px',
-                      backgroundColor: '#ffc107',
-                      color: '#000',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontWeight: '500',
-                      fontSize: isMobile ? '13px' : '14px',
-                      marginTop: '5px'
-                    }}
-                  >
-                    Connect Monzo
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* History Tab */}
-          {activeTab === 'history' && (
-            <TransactionHistory 
-              transactions={transactions} 
+          </>
+        );
+        
+      case 'log-waste':
+        return (
+          <TabContainer title="Log Waste Reduction" icon={<Trash2 size={28} />}>
+            <WasteForm 
+              isConnected={!!walletAddress}
+              logWasteReduction={handleLogWasteReduction}
             />
-          )}
+          </TabContainer>
+        );
+        
+      case 'history':
+        return (
+          <TabContainer title="Transaction History" icon={<History size={28} />}>
+            <TransactionHistory transactions={transactions} />
+          </TabContainer>
+        );
+        
+      case 'monzo':
+        return (
+          <TabContainer title="Banking Integration" icon={<CreditCard size={28} />}>
+            <MonzoConnection />
+          </TabContainer>
+        );
+        
+      default:
+        return (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <h2 style={{ color: '#ed4c4c', fontFamily: 'Grandstander, cursive' }}>
+              Tab not found
+            </h2>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div style={mainLayoutStyle}>
+      {/* Mobile overlay */}
+      <div 
+        style={overlayStyle}
+        onClick={() => setIsSidebarOpen(false)}
+      />
+      
+      {/* Sidebar */}
+      <div style={sidebarContainerStyle}>
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={(tab: string) => {
+            setActiveTab(tab);
+            if (isMobile) setIsSidebarOpen(false);
+          }} 
+        />
+      </div>
+
+      {/* Main Content */}
+      <main style={contentAreaStyle}>
+        {/* Mobile Header */}
+        <header style={mobileHeaderStyle}>
+          <button 
+            style={hamburgerStyle}
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          >
+            ☰
+          </button>
           
-          {/* Monzo Tab */}
-          {activeTab === 'monzo' && (
-            <div>
-              <div style={{ 
-                marginBottom: '20px'
-              }}>
-                <h3 style={{ 
-                  marginBottom: '10px',
-                  fontSize: isMobile ? '18px' : '20px'
-                }}>
-                  🏦 Banking Integration
-                </h3>
-                <p style={{ 
-                  color: '#888',
-                  fontSize: isMobile ? '14px' : '16px',
-                  lineHeight: '1.5'
-                }}>
-                  Connect your Monzo account to enable automatic verification of food purchases 
-                  and earn bonus tokens for verified waste reduction activities.
-                </p>
-              </div>
-              
-              <MonzoConnection 
-                onConnectionStatusChange={handleMonzoConnectionChange}
-              />
+          <div style={logoMobileStyle}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              background: '#ed4c4c',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px'
+            }}>
+              🥗
             </div>
-          )}
-        </div>
+            <span style={{
+              fontSize: '18px',
+              fontWeight: '700',
+              color: '#ed4c4c',
+              fontFamily: 'Grandstander, cursive'
+            }}>
+              HeySalad
+            </span>
+          </div>
+        </header>
+
+        {/* Tab Content */}
+        {renderTabContent()}
+      </main>
+    </div>
+  );
+}
+
+// Dashboard Header Component
+function DashboardHeader({ 
+  walletAddress, 
+  isMonzoConnected,
+  tokenBalance,
+  onConnectWallet
+}: { 
+  walletAddress: string | null; 
+  isMonzoConnected: boolean;
+  tokenBalance: string;
+  onConnectWallet: () => Promise<void>;
+}) {
+  const headerStyle: React.CSSProperties = {
+    marginBottom: '32px',
+    background: '#000000',
+    padding: '24px',
+    borderRadius: '25px',
+    border: '2px solid #333333',
+    boxShadow: '0 4px 12px rgba(237, 76, 76, 0.15)'
+  };
+
+  const titleStyle: React.CSSProperties = {
+    fontSize: '32px',
+    fontWeight: '800',
+    color: '#ffffff',
+    margin: '0 0 8px 0',
+    fontFamily: 'Grandstander, cursive'
+  };
+
+  const subtitleStyle: React.CSSProperties = {
+    fontSize: '16px',
+    color: '#faa09a',
+    margin: '0 0 16px 0',
+    fontFamily: 'Figtree, sans-serif'
+  };
+
+  const statusBarStyle: React.CSSProperties = {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '12px',
+    alignItems: 'center'
+  };
+
+  return (
+    <div style={headerStyle}>
+      <h1 style={titleStyle}>
+        Good {getTimeOfDay()}! 👋
+      </h1>
+      <p style={subtitleStyle}>
+        Ready to make a positive impact on food waste?
+      </p>
+      
+      <div style={statusBarStyle}>
+        <WalletConnectionButton 
+          isConnected={!!walletAddress}
+          isConnecting={false}
+          selectedAccount={null}
+          tokenBalance={tokenBalance}
+          connectWallet={onConnectWallet}
+        />
+        
+        <StatusBadge
+          icon={<CreditCard size={14} />}
+          label="Monzo"
+          status={isMonzoConnected ? 'connected' : 'disconnected'}
+        />
+        
+        <StatusBadge
+          icon={<Globe size={14} />}
+          label="Polkadot"
+          status={walletAddress ? 'connected' : 'disconnected'}
+        />
       </div>
     </div>
   );
+}
+
+// Tab Container Component
+function TabContainer({ 
+  title, 
+  icon, 
+  children 
+}: { 
+  title: string; 
+  icon: React.ReactNode; 
+  children: React.ReactNode;
+}) {
+  const containerStyle: React.CSSProperties = {
+    background: '#000000',
+    borderRadius: '25px',
+    padding: '32px',
+    boxShadow: '0 8px 24px rgba(237, 76, 76, 0.15), 0 4px 8px rgba(237, 76, 76, 0.1)',
+    border: '2px solid #333333'
+  };
+
+  const headerStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '24px',
+    paddingBottom: '16px',
+    borderBottom: '2px solid #333333'
+  };
+
+  const titleStyle: React.CSSProperties = {
+    fontSize: '24px',
+    fontWeight: '700',
+    color: '#ffffff',
+    margin: 0,
+    fontFamily: 'Grandstander, cursive'
+  };
+
+  return (
+    <div style={containerStyle}>
+      <div style={headerStyle}>
+        <div style={{ color: '#ed4c4c' }}>{icon}</div>
+        <h2 style={titleStyle}>{title}</h2>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// Quick Actions Component
+function QuickActions({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
+  const containerStyle: React.CSSProperties = {
+    background: '#000000',
+    borderRadius: '25px',
+    padding: '24px',
+    boxShadow: '0 8px 24px rgba(237, 76, 76, 0.15), 0 4px 8px rgba(237, 76, 76, 0.1)',
+    border: '2px solid #333333'
+  };
+
+  const headerStyle: React.CSSProperties = {
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#ffffff',
+    margin: '0 0 16px 0',
+    fontFamily: 'Grandstander, cursive',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px'
+  };
+
+  const actionsStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+  };
+
+  const actions = [
+    {
+      icon: <Trash2 size={24} />,
+      title: 'Log Waste Reduction',
+      description: 'Record your food waste prevention',
+      action: () => setActiveTab('log-waste'),
+      color: '#28a745'
+    },
+    {
+      icon: <CreditCard size={24} />,
+      title: 'Connect Banking',
+      description: 'Link Monzo for transaction verification',
+      action: () => setActiveTab('monzo'),
+      color: '#ed4c4c'
+    },
+    {
+      icon: <History size={24} />,
+      title: 'View History',
+      description: 'See all your transactions',
+      action: () => setActiveTab('history'),
+      color: '#17a2b8'
+    }
+  ];
+
+  return (
+    <div style={containerStyle}>
+      <h3 style={headerStyle}>
+        <Zap size={20} style={{ color: '#ed4c4c' }} />
+        Quick Actions
+      </h3>
+      
+      <div style={actionsStyle}>
+        {actions.map((action, index) => (
+          <QuickActionButton
+            key={index}
+            icon={action.icon}
+            title={action.title}
+            description={action.description}
+            onClick={action.action}
+            color={action.color}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Quick Action Button Component
+function QuickActionButton({ 
+  icon, 
+  title, 
+  description, 
+  onClick, 
+  color 
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  onClick: () => void;
+  color: string;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const buttonStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '16px',
+    background: isHovered ? `${color}22` : '#111111',
+    border: `2px solid ${isHovered ? color : '#333333'}`,
+    borderRadius: '16px',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    textAlign: 'left'
+  };
+
+  const iconStyle: React.CSSProperties = {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    background: `${color}22`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: color,
+    flexShrink: 0
+  };
+
+  const textStyle: React.CSSProperties = {
+    flex: 1
+  };
+
+  const titleStyle: React.CSSProperties = {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: isHovered ? color : '#ffffff',
+    margin: '0 0 4px 0',
+    fontFamily: 'Figtree, sans-serif'
+  };
+
+  const descriptionStyle: React.CSSProperties = {
+    fontSize: '12px',
+    color: '#faa09a',
+    margin: 0,
+    fontFamily: 'Figtree, sans-serif'
+  };
+
+  return (
+    <button
+      style={buttonStyle}
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div style={iconStyle}>{icon}</div>
+      <div style={textStyle}>
+        <div style={titleStyle}>{title}</div>
+        <div style={descriptionStyle}>{description}</div>
+      </div>
+    </button>
+  );
+}
+
+// Status Badge Component
+function StatusBadge({ 
+  icon, 
+  label, 
+  status 
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  status: 'connected' | 'disconnected';
+}) {
+  const badgeStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '8px 12px',
+    borderRadius: '20px',
+    fontSize: '12px',
+    fontWeight: '600',
+    fontFamily: 'Figtree, sans-serif',
+    background: status === 'connected' ? '#28a74522' : '#dc354522',
+    color: status === 'connected' ? '#28a745' : '#dc3545',
+    border: `1px solid ${status === 'connected' ? '#28a745' : '#dc3545'}33`
+  };
+
+  const StatusIcon = status === 'connected' ? CheckCircle : XCircle;
+
+  return (
+    <div style={badgeStyle}>
+      {icon}
+      <span>{label}</span>
+      <StatusIcon size={12} />
+    </div>
+  );
+}
+
+// Helper Functions
+function getTimeOfDay(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'morning';
+  if (hour < 17) return 'afternoon';
+  return 'evening';
 }

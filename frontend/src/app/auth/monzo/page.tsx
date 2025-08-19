@@ -1,368 +1,387 @@
+// app/auth/monzo/page.tsx
 'use client';
-
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 
-const MonzoAuthPage: React.FC = () => {
-  // Stages of the authorization process
-  type Stage = 'init' | 'waiting-for-approval' | 'attempting-exchange' | 'token-received' | 'fetching-accounts' | 'success' | 'error';
-  
-  const [stage, setStage] = useState<Stage>('init');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [approvalTime, setApprovalTime] = useState(60); // 60 seconds to approve
-  const [waitTime, setWaitTime] = useState(10); // 10 seconds between stages
-  const [tokenData, setTokenData] = useState<{
-    access_token: string;
-    refresh_token?: string;
-    user_id: string;
-  } | null>(null);
-  
+type AuthStage = 'processing' | 'waiting_mobile' | 'exchanging' | 'success' | 'error';
+
+export default function MonzoAuthPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [stage, setStage] = useState<AuthStage>('processing');
+  const [countdown, setCountdown] = useState(90); // Increased to 90 seconds
+  const [error, setError] = useState<string | null>(null);
 
-  // Log each stage change
-  useEffect(() => {
-    console.log(`[Monzo Auth] Current stage: ${stage}`);
-  }, [stage]);
+  const authCode = searchParams.get('code');
+  const state = searchParams.get('state');
 
-  // Initialize the process
   useEffect(() => {
-    const code = searchParams.get('code');
-    const error = searchParams.get('error');
-    
-    if (error) {
-      setErrorMessage(`Monzo authorization failed: ${error}`);
-      setStage('error');
-      return;
-    }
-    
-    if (!code) {
-      setErrorMessage('No authorization code provided');
+    if (!authCode) {
+      setError('Missing authorization code');
       setStage('error');
       return;
     }
 
-    console.log('[Monzo Auth] Authorization code received from Monzo');
-    console.log('[Monzo Auth] Entering waiting period for mobile app approval');
-    setStage('waiting-for-approval');
-  }, [searchParams]);
+    // Initial processing delay to ensure email flow is complete
+    setTimeout(() => {
+      setStage('waiting_mobile');
+    }, 2000); // 2 second delay before starting mobile wait
+    
+    // Extended countdown timer for mobile app approval
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          // Additional delay before token exchange to ensure mobile approval
+          setTimeout(() => {
+            handleTokenExchange();
+          }, 3000); // 3 second delay after countdown
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-  // Approval timer countdown
-  useEffect(() => {
-    if (stage === 'waiting-for-approval' && approvalTime > 0) {
-      const timer = setTimeout(() => {
-        setApprovalTime(approvalTime - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (stage === 'waiting-for-approval' && approvalTime === 0) {
-      console.log('[Monzo Auth] Approval wait time finished');
-      console.log('[Monzo Auth] Proceeding to token exchange');
-      setStage('attempting-exchange');
-    }
-  }, [approvalTime, stage]);
+    return () => clearInterval(timer);
+  }, [authCode]);
 
-  // Stage transition timer
-  useEffect(() => {
-    if (stage === 'attempting-exchange') {
-      attemptTokenExchange();
-    } else if (stage === 'token-received' && waitTime > 0) {
-      const timer = setTimeout(() => {
-        setWaitTime(waitTime - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (stage === 'token-received' && waitTime === 0) {
-      console.log('[Monzo Auth] Post-token wait time finished');
-      console.log('[Monzo Auth] Proceeding to fetch accounts');
-      setStage('fetching-accounts');
-      fetchAccounts();
-    }
-  }, [stage, waitTime]);
-
-  // Attempt to exchange the authorization code for a token
-  const attemptTokenExchange = async () => {
+  const handleTokenExchange = async () => {
+    setStage('exchanging');
+    
     try {
-      const code = searchParams.get('code');
-      
-      if (!code) {
-        throw new Error('No authorization code available');
-      }
+      const response = await fetch('/api/monzo/exchange', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: authCode,
+          state: state
+        }),
+      });
 
-      console.log('[Monzo Auth] Attempting to exchange code for token...');
-      
-      try {
-        const response = await fetch('/api/monzo/auth', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ code, state: 'auth_flow' }),
-        });
-
+      if (response.ok) {
         const data = await response.json();
+        setStage('success');
         
-        if (!data.success) {
-          throw new Error(data.error || 'Token exchange failed');
-        }
-
-        console.log('[Monzo Auth] Token exchange successful');
-        
-        setTokenData({
-          access_token: data.tokens.access_token,
-          refresh_token: data.tokens.refresh_token,
-          user_id: data.tokens.user_id
-        });
-        
-        // Reset wait time for next stage
-        setWaitTime(10); 
-        setStage('token-received');
-      } catch (error: any) {
-        console.error('[Monzo Auth] Token exchange error:', error);
-        
-        if (error.message?.includes('used')) {
-          setErrorMessage('Your authorization code has already been used. Please try connecting again.');
-        } else {
-          setErrorMessage(error.message || 'Failed to exchange authorization code for token');
-        }
-        setStage('error');
+        // Redirect to dashboard after 3 seconds
+        setTimeout(() => {
+          router.push('/?tab=monzo&connected=true');
+        }, 3000);
+      } else {
+        throw new Error('Failed to exchange token');
       }
-    } catch (error: any) {
-      console.error('[Monzo Auth] Error in token exchange process:', error);
-      setErrorMessage(error.message || 'An unexpected error occurred');
+    } catch (err) {
+      console.error('Token exchange error:', err);
+      setError('Failed to complete authorization');
       setStage('error');
     }
   };
 
-  // Fetch account information using the token
-  const fetchAccounts = async () => {
-    if (!tokenData) {
-      setErrorMessage('No token data available');
-      setStage('error');
-      return;
-    }
-
-    try {
-      console.log('[Monzo Auth] Fetching Monzo accounts...');
-      
-      const response = await fetch(`/api/monzo/transactions?access_token=${tokenData.access_token}&account_id=auto&type=analysis&days=30`);
-      const data = await response.json();
-      
-      console.log('[Monzo Auth] Successfully completed account verification');
-      
-      // Store tokens locally for the session
-      localStorage.setItem('monzo_tokens', JSON.stringify(tokenData));
-      localStorage.setItem('monzo_account_connected', 'true');
-
-      console.log('[Monzo Auth] User data updated successfully');
-      setStage('success');
-      
-      // Redirect back to main app with success
-      setTimeout(() => {
-        router.push('/?monzo_success=true&access_token=' + tokenData.access_token + '&user_id=' + tokenData.user_id);
-      }, 2000);
-    } catch (error) {
-      console.error('[Monzo Auth] Error during final verification:', error);
-      
-      // Even if verification fails, still save the tokens
-      localStorage.setItem('monzo_tokens', JSON.stringify(tokenData));
-      localStorage.setItem('monzo_account_connected', 'true');
-      
-      console.log('[Monzo Auth] Saved token despite verification issues');
-      setStage('success');
-      setTimeout(() => {
-        router.push('/?monzo_success=true&access_token=' + tokenData.access_token + '&user_id=' + tokenData.user_id);
-      }, 2000);
-    }
+  const pageStyle: React.CSSProperties = {
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #ffd0cd 0%, #faa09a 50%, #ed4c4c 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '20px',
+    fontFamily: 'Figtree, sans-serif'
   };
 
-  // Allow user to skip the waiting periods
-  const handleContinue = () => {
-    if (stage === 'waiting-for-approval') {
-      console.log('[Monzo Auth] User manually proceeded to token exchange');
-      setStage('attempting-exchange');
-    } else if (stage === 'token-received') {
-      console.log('[Monzo Auth] User manually proceeded to account fetching');
-      setStage('fetching-accounts');
-      fetchAccounts();
-    }
+  const containerStyle: React.CSSProperties = {
+    background: '#000000',
+    borderRadius: '25px',
+    padding: '40px',
+    maxWidth: '500px',
+    width: '100%',
+    textAlign: 'center',
+    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+    border: '2px solid #333333'
   };
 
-  // Render the appropriate UI based on the current stage
-  const renderContent = () => {
+  const logoStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '32px',
+    gap: '12px'
+  };
+
+  const renderStageContent = () => {
     switch (stage) {
-      case 'init':
-        return (
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-xl text-white">Initializing authentication process...</p>
-          </div>
-        );
-        
-      case 'waiting-for-approval':
-        return (
-          <div className="text-center bg-slate-900 p-8 rounded-lg shadow-lg max-w-md mx-auto border border-slate-700">
-            <div className="mb-6">
-              <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xl">🥗</span>
-              </div>
-            </div>
-            
-            <h2 className="text-2xl font-bold text-white mb-4">
-              Waiting for Mobile App Approval
-            </h2>
-            
-            <div className="mb-6">
-              <div className="relative pt-1">
-                <div className="flex mb-2 items-center justify-between">
-                  <div>
-                    <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-400 bg-blue-900">
-                      Time to approve
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs font-semibold inline-block text-blue-400">
-                      {approvalTime} seconds
-                    </span>
-                  </div>
-                </div>
-                <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-slate-700">
-                  <div style={{ width: `${(approvalTime / 60) * 100}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600 transition-all duration-500"></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile phone mockup */}
-            <div className="mb-6">
-              <div className="mx-auto w-32 h-56 bg-slate-800 rounded-2xl border-2 border-slate-600 flex flex-col">
-                <div className="flex-1 p-3 flex flex-col justify-center items-center">
-                  <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center mb-2">
-                    <span className="text-white font-bold">M</span>
-                  </div>
-                  <div className="text-xs text-slate-300 text-center">
-                    <div className="mb-1">Monzo</div>
-                    <div className="text-blue-400">Grant Access?</div>
-                  </div>
-                </div>
-                <div className="h-8 bg-slate-700 rounded-b-2xl"></div>
-              </div>
-            </div>
-            
-            <p className="text-slate-300 mb-6 text-sm">
-              Please check your Monzo app and approve the HeySalad ® Tasha authorization request. 
-              We'll automatically proceed once you approve.
-            </p>
-            
-            <button 
-              onClick={handleContinue}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200 font-medium"
-            >
-              I've Approved in Monzo App
-            </button>
-          </div>
-        );
-        
-      case 'attempting-exchange':
-        return (
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-xl text-white">Exchanging authorization code for token...</p>
-            <p className="text-slate-400 mt-2">This may take a moment</p>
-          </div>
-        );
-        
-      case 'token-received':
-        return (
-          <div className="text-center bg-slate-900 p-8 rounded-lg shadow-lg max-w-md mx-auto border border-slate-700">
-            <div className="text-green-400 text-6xl mb-4">✓</div>
-            <h2 className="text-2xl font-bold text-white mb-4">
-              Token Received Successfully!
-            </h2>
-            
-            <div className="mb-6">
-              <div className="relative pt-1">
-                <div className="flex mb-2 items-center justify-between">
-                  <div>
-                    <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-green-400 bg-green-900">
-                      Finalizing connection
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs font-semibold inline-block text-green-400">
-                      {waitTime} seconds
-                    </span>
-                  </div>
-                </div>
-                <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-slate-700">
-                  <div style={{ width: `${(waitTime / 10) * 100}%` }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-600 transition-all duration-500"></div>
-                </div>
-              </div>
-            </div>
-            
-            <p className="text-slate-300 mb-6 text-sm">
-              Perfect! We've received your authorization. Just completing the final setup steps.
-            </p>
-            
-            <button 
-              onClick={handleContinue}
-              className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition duration-200 font-medium"
-            >
-              Continue Now
-            </button>
-          </div>
-        );
-        
-      case 'fetching-accounts':
-        return (
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-xl text-white">Setting up your connection...</p>
-            <p className="text-slate-400 mt-2">Almost ready!</p>
-          </div>
-        );
-        
-      case 'error':
-        return (
-          <div className="text-center bg-slate-900 p-8 rounded-lg shadow-lg max-w-md mx-auto border border-red-500">
-            <h2 className="text-2xl font-bold text-red-400 mb-4">Connection Failed</h2>
-            <p className="text-slate-300 mb-6 text-sm">{errorMessage}</p>
-            <p className="text-slate-400 mb-6 text-xs">
-              Please make sure to approve the request promptly in your Monzo app.
-            </p>
-            <button 
-              onClick={() => router.push('/')}
-              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200 font-medium"
-            >
-              Return to App
-            </button>
-          </div>
-        );
-        
+      case 'processing':
+        return <ProcessingStage />;
+      case 'waiting_mobile':
+        return <WaitingMobileStage countdown={countdown} onSkip={handleTokenExchange} />;
+      case 'exchanging':
+        return <ExchangingStage />;
       case 'success':
-        return (
-          <div className="text-center">
-            <div className="text-green-400 text-6xl mb-4">✓</div>
-            <p className="text-xl text-white">Successfully connected to Monzo!</p>
-            <p className="text-slate-400 mt-2">Redirecting back to HeySalad...</p>
-          </div>
-        );
+        return <SuccessStage />;
+      case 'error':
+        return <ErrorStage error={error} onRetry={handleTokenExchange} />;
+      default:
+        return <ProcessingStage />;
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#000000' }}>
-      <div className="max-w-lg w-full mx-4">
-        {/* HeySalad Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            HeySalad 🥗 × Monzo
-          </h1>
-          <p className="text-slate-400">Connecting your bank for enhanced verification</p>
+    <div style={pageStyle}>
+      <div style={containerStyle}>
+        <div style={logoStyle}>
+          <div style={{ 
+            position: 'relative', 
+            height: '48px', 
+            width: '160px'
+          }}>
+            <Image 
+              src="/HeySalad Logo White.png" 
+              alt="HeySalad Logo" 
+              fill
+              style={{ 
+                objectFit: 'contain'
+              }} 
+            />
+          </div>
         </div>
         
-        {renderContent()}
+        {renderStageContent()}
       </div>
     </div>
   );
-};
+}
 
-export default MonzoAuthPage;
+// Stage Components
+function ProcessingStage() {
+  return (
+    <div>
+      <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+      <h2 style={{ 
+        fontSize: '20px', 
+        color: '#ffffff', 
+        marginBottom: '8px',
+        fontFamily: 'Grandstander, cursive'
+      }}>
+        Processing Authorization...
+      </h2>
+      <p style={{ color: '#faa09a', fontSize: '14px' }}>
+        Setting up your Monzo connection
+      </p>
+    </div>
+  );
+}
+
+function WaitingMobileStage({ countdown, onSkip }: { countdown: number; onSkip: () => void }) {
+  const phoneStyle: React.CSSProperties = {
+    width: '120px',
+    height: '240px',
+    background: 'linear-gradient(145deg, #333, #555)',
+    borderRadius: '25px',
+    margin: '0 auto 24px',
+    position: 'relative',
+    padding: '20px 10px',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+  };
+
+  const screenStyle: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+    background: 'linear-gradient(145deg, #00D4AA, #FF6B35)',
+    borderRadius: '15px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '24px',
+    color: 'white',
+    animation: 'pulse 2s infinite'
+  };
+
+  return (
+    <div>
+      <div style={phoneStyle}>
+        <div style={screenStyle}>
+          📱
+        </div>
+      </div>
+      
+      <h2 style={{ 
+        fontSize: '20px', 
+        color: '#ed4c4c', 
+        marginBottom: '12px',
+        fontFamily: 'Grandstander, cursive'
+      }}>
+        Check Your Monzo App
+      </h2>
+      
+      <p style={{ 
+        color: '#faa09a', 
+        fontSize: '14px', 
+        marginBottom: '24px',
+        lineHeight: '1.5'
+      }}>
+        Open the Monzo app on your phone and approve the connection request to complete the authorization.
+      </p>
+
+      <div style={{
+        background: 'rgba(237, 76, 76, 0.1)',
+        border: '1px solid rgba(237, 76, 76, 0.3)',
+        borderRadius: '12px',
+        padding: '16px',
+        marginBottom: '24px'
+      }}>
+        <div style={{ fontSize: '24px', marginBottom: '8px' }}>⏱️</div>
+        <div style={{ 
+          fontSize: '24px', 
+          fontWeight: '700', 
+          color: '#ed4c4c',
+          fontFamily: 'Grandstander, cursive'
+        }}>
+          {countdown}s
+        </div>
+        <div style={{ fontSize: '12px', color: '#faa09a' }}>
+          {countdown > 60 ? 'Waiting for mobile approval...' : 'Auto-continuing soon...'}
+        </div>
+      </div>
+
+      <button
+        onClick={onSkip}
+        style={{
+          background: 'linear-gradient(135deg, #ed4c4c 0%, #faa09a 100%)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '50px',
+          padding: '12px 24px',
+          fontSize: '14px',
+          fontWeight: '600',
+          cursor: 'pointer',
+          fontFamily: 'Figtree, sans-serif',
+          transition: 'all 0.3s ease',
+          boxShadow: '0 4px 12px rgba(237, 76, 76, 0.3)'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 6px 16px rgba(237, 76, 76, 0.4)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(237, 76, 76, 0.3)';
+        }}
+      >
+        Continue Anyway
+      </button>
+    </div>
+  );
+}
+
+function ExchangingStage() {
+  return (
+    <div>
+      <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔄</div>
+      <h2 style={{ 
+        fontSize: '20px', 
+        color: '#ed4c4c', 
+        marginBottom: '8px',
+        fontFamily: 'Grandstander, cursive'
+      }}>
+        Finalizing Connection
+      </h2>
+      <p style={{ color: '#faa09a', fontSize: '14px' }}>
+        Exchanging authorization code for access token...
+      </p>
+    </div>
+  );
+}
+
+function SuccessStage() {
+  return (
+    <div>
+      <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
+      <h2 style={{ 
+        fontSize: '20px', 
+        color: '#28a745', 
+        marginBottom: '8px',
+        fontFamily: 'Grandstander, cursive'
+      }}>
+        Connected Successfully!
+      </h2>
+      <p style={{ color: '#faa09a', fontSize: '14px', marginBottom: '16px' }}>
+        Your Monzo account is now connected to HeySalad!
+      </p>
+      <div style={{
+        background: 'rgba(40, 167, 69, 0.1)',
+        border: '1px solid rgba(40, 167, 69, 0.3)',
+        borderRadius: '12px',
+        padding: '16px',
+        marginBottom: '24px'
+      }}>
+        <div style={{ fontSize: '16px', color: '#28a745', fontWeight: '600' }}>
+          ✅ Banking verification enabled
+        </div>
+        <div style={{ fontSize: '14px', color: '#faa09a', marginTop: '4px' }}>
+          Earn 1.5x tokens for verified transactions
+        </div>
+      </div>
+      <p style={{ color: '#faa09a', fontSize: '12px' }}>
+        Redirecting to dashboard in 3 seconds...
+      </p>
+    </div>
+  );
+}
+
+function ErrorStage({ error, onRetry }: { error: string | null; onRetry: () => void }) {
+  return (
+    <div>
+      <div style={{ fontSize: '48px', marginBottom: '16px' }}>❌</div>
+      <h2 style={{ 
+        fontSize: '20px', 
+        color: '#dc3545', 
+        marginBottom: '8px',
+        fontFamily: 'Grandstander, cursive'
+      }}>
+        Connection Failed
+      </h2>
+      <p style={{ color: '#faa09a', fontSize: '14px', marginBottom: '24px' }}>
+        {error || 'Something went wrong during the authorization process.'}
+      </p>
+      
+      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+        <button
+          onClick={onRetry}
+          style={{
+            background: 'linear-gradient(135deg, #ed4c4c 0%, #faa09a 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '50px',
+            padding: '12px 24px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            fontFamily: 'Figtree, sans-serif',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 12px rgba(237, 76, 76, 0.3)'
+          }}
+        >
+          Try Again
+        </button>
+        
+        <button
+          onClick={() => window.location.href = '/'}
+          style={{
+            background: 'transparent',
+            color: '#ed4c4c',
+            border: '2px solid #ed4c4c',
+            borderRadius: '50px',
+            padding: '12px 24px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            fontFamily: 'Figtree, sans-serif',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          Back to Dashboard
+        </button>
+      </div>
+    </div>
+  );
+}
