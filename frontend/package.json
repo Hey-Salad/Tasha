@@ -14,12 +14,17 @@
     "@polkadot/extension-dapp": "^0.58.8",
     "@polkadot/react-identicon": "^3.13.1",
     "@radix-ui/react-icons": "^1.3.2",
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-slot": "^1.2.3",
     "axios": "^1.8.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "ethers": "^6.13.5",
     "lucide-react": "^0.501.0",
     "next": "15.3.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
@@ -33,6 +38,7 @@
     "eslint-config-next": "15.3.1",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.4",
+    "tw-animate-css": "^1.3.7",
     "typescript": "^5"
   }
 }

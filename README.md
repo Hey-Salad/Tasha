@@ -183,7 +183,7 @@ Our FWT token contract is deployed on Polkadot Asset-Hub:
    - Visit [Westend Faucet](https://faucet.polkadot.io/)
    - Request WND tokens for gas fees
 
-## 🏦 Banking Integration
+## 🏦 **Banking Integration**
 
 ### UberEats API Integration
 
@@ -193,16 +193,40 @@ Our FWT token contract is deployed on Polkadot Asset-Hub:
 - Receipt analysis and categorization
 - Spending pattern insights
 
+### Monzo Integration
+
+**Full OAuth Flow:**
+HeySalad ® Tasha now supports complete Monzo integration with a beautiful authentication flow:
+
+![Monzo Developer Console](screenshots/Monzo_Developers_Oauth.png)
+*Monzo Developer Console - OAuth Client Setup*
+
+![Monzo Email Authentication](screenshots/Monzo_Email_Dev_Console.png)
+*Email-based Authentication Flow*
+
+![Monzo Email Logo](screenshots/Monzo_Email_Logo.png)
+*Monzo Authentication Email*
+
+![Monzo Mobile App Approval](screenshots/Monzo_Authentication_Bank_App.jpeg)
+*Mobile App Approval Screen - Users must approve in their Monzo mobile app*
+
 **Setup:**
-1. Register for UberEats Developer API
-2. Configure OAuth for secure authentication
-3. Set up webhook endpoints for real-time updates
+1. Register for Monzo Developer API
+2. Create OAuth client with proper redirect URLs
+3. Configure mobile app approval flow (60-second window)
+4. Set up secure token exchange
+
+**Authentication Flow:**
+1. **Email Verification** - User receives secure magic link
+2. **Mobile App Approval** - User approves in Monzo mobile app (60-second window)
+3. **Token Exchange** - Secure server-side token exchange
+4. **Account Linking** - Automatic account discovery and linking
 
 ### Transaction Verification Flow
 
 1. **Purchase Detection** - Monitor food-related transactions
 2. **Waste Correlation** - Match purchases with waste reduction claims
-3. **AI Analysis** - Verify logical consistency
+3. **AI Analysis** - Verify logical consistency with dual AI system
 4. **Token Reward** - Automatic FWT minting for verified reductions
 
 ## 🔥 Firebase & Supabase Integration
