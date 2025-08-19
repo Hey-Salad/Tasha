@@ -8,16 +8,18 @@
 
 > **Making sustainability engaging through voice interaction and blockchain rewards**
 
-HeySalad ® Tasha is an AI-powered voice assistant that helps users reduce food waste through natural conversation while earning blockchain rewards. Built during the EasyA Hackathon and funded by Polkadot Fast-Grants, it combines 11Labs voice technology with Microsoft Azure AI verification on Polkadot's Asset-Hub.
+HeySalad ® Tasha is an AI-powered voice assistant that helps users reduce food waste through natural conversation while earning blockchain rewards. Built during the EasyA Hackathon and funded by Polkadot Fast-Grants, it combines 11Labs voice technology with Google Gemini AI and Azure OpenAI for robust verification on Polkadot's Asset-Hub.
 
 ## 🌟 Key Features
 
 - 🎙️ **Voice-First Interface** - Natural conversation with Tasha using 11Labs
 - 🪙 **Blockchain Rewards** - Earn FWT (Food Waste Tokens) on Polkadot Asset-Hub
-- 🤖 **AI Verification** - Microsoft Azure AI validates waste reduction claims
-- 🏦 **Bank Integration** - Monzo API for purchase verification
+- 🤖 **Dual AI System** - Google Gemini (primary) + Azure OpenAI (fallback) for reliable verification
+- 🏦 **Banking Integration** - UberEats API for purchase verification
 - 📱 **Web dApp** - React/Next.js interface with wallet integration
 - 🌍 **Environmental Impact** - Track CO₂ emissions prevented
+- 🔥 **Firebase Integration** - Real-time data synchronization
+- 📊 **Supabase Backend** - Robust database and authentication
 
 ## 🚀 Quick Start
 
@@ -32,11 +34,7 @@ HeySalad ® Tasha is an AI-powered voice assistant that helps users reduce food 
 1. **Clone the repository**
    ```bash
    git clone https://github.com/Hey-Salad/Tasha.git
-<<<<<<< HEAD
    cd Tasha/frontend
-=======
-   cd Tasha
->>>>>>> 8049455715a83d733b9573a8b42a2d0c1b028c2c
    ```
 
 2. **Install dependencies**
@@ -49,20 +47,39 @@ HeySalad ® Tasha is an AI-powered voice assistant that helps users reduce food 
    cp .env.example .env.local
    ```
    
-   Add your API keys:
+   Add your API keys to `.env.local`:
    ```env
    # Blockchain
    NEXT_PUBLIC_CONTRACT_ADDRESS=your_fwt_contract_address
    NEXT_PUBLIC_RPC_ENDPOINT=wss://westend-asset-hub-rpc.polkadot.io
    
-   # Voice & AI Services
+   # AI Services - Primary: Google Gemini, Secondary: Azure OpenAI
+   NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key
+   NEXT_PUBLIC_GEMINI_ENDPOINT=https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent
+   
+   # Azure OpenAI (Fallback - Advanced Reasoning)
+   NEXT_PUBLIC_AZURE_OPENAI_ENDPOINT=your_azure_endpoint
+   AZURE_OPENAI_KEY=your_azure_key
+   NEXT_PUBLIC_AZURE_API_VERSION=2024-05-01-preview
+   NEXT_PUBLIC_AZURE_OPENAI_DEPLOYMENT=gpt-4
+   
+   # Voice Services - 11Labs
    NEXT_PUBLIC_ELEVENLABS_API_KEY=your_elevenlabs_key
-   AZURE_AI_ENDPOINT=your_azure_endpoint
-   AZURE_AI_KEY=your_azure_key
+   NEXT_PUBLIC_ELEVENLABS_AGENT_ID=your_agent_id
+   NEXT_PUBLIC_ELEVENLABS_VOICE_ID=your_voice_id
    
    # Banking Integration
-   MONZO_CLIENT_ID=your_monzo_client_id
-   MONZO_CLIENT_SECRET=your_monzo_client_secret
+   NEXT_PUBLIC_UBER_CLIENT_ID=your_uber_client_id
+   UBER_CLIENT_SECRET=your_uber_client_secret
+   
+   # Firebase
+   NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_firebase_domain
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_firebase_project_id
+   
+   # Supabase
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
 4. **Run the development server**
@@ -95,19 +112,43 @@ HeySalad ® Tasha is an AI-powered voice assistant that helps users reduce food 
 - `"Show me my recent transactions"`
 - `"Help me find a restaurant nearby"`
 
+## 🤖 AI System Architecture
+
+### Dual AI Configuration
+
+**Primary AI: Google Gemini**
+- Fast response times
+- Cost-effective
+- Excellent natural language understanding
+- Image analysis capabilities
+
+**Secondary AI: Azure OpenAI (GPT-4)**
+- Fallback when Gemini is unavailable
+- Advanced reasoning for complex queries
+- Enterprise-grade reliability
+- Better handling of edge cases
+
+### AI Verification Process
+
+1. **Initial Processing** - Gemini analyzes user input and waste claims
+2. **Image Verification** - Computer vision validates uploaded photos
+3. **Confidence Scoring** - AI assigns verification confidence (0-100%)
+4. **Fallback System** - Switches to Azure OpenAI if Gemini fails or confidence is low
+5. **Human Review** - Very low confidence scores trigger manual review
+
 ## 💰 Token System (FWT)
 
 ### How It Works
 
 1. **Log waste reduction** through voice or manual input
-2. **AI verification** analyzes your submission
+2. **AI Verification** - Dual AI system (Gemini + Azure OpenAI) analyzes your submission
 3. **Earn FWT tokens** minted directly to your wallet
 4. **Track impact** with environmental metrics
 
 ### Token Economics
 
 - **Emission Rate**: 10 FWT per kg of food waste reduced
-- **Verification**: AI + optional manual review
+- **Verification**: Dual AI + optional manual review
 - **Rewards**: Instant minting to your wallet
 - **Utility**: Governance, staking, marketplace access
 
@@ -115,7 +156,7 @@ HeySalad ® Tasha is an AI-powered voice assistant that helps users reduce food 
 
 Our FWT token contract is deployed on Polkadot Asset-Hub:
 
-**Contract Address**: `[To be added after deployment]`
+**Contract Address**: `0x34F4EB3Cce74e851E389E6a9Ad0Ad61f647F1B0c`
 
 **Key Functions**:
 - `logWasteReduction(uint256 amount, string actionType)` - Log and earn tokens
@@ -142,30 +183,41 @@ Our FWT token contract is deployed on Polkadot Asset-Hub:
    - Visit [Westend Faucet](https://faucet.polkadot.io/)
    - Request WND tokens for gas fees
 
-## 🏦 Bank Integration (Monzo)
+## 🏦 Banking Integration
 
-### Setup
+### UberEats API Integration
 
-1. **Create Monzo Developer Account**
-   - Visit [Monzo Developers](https://developers.monzo.com/)
-   - Create an OAuth application
+**Features:**
+- Transaction verification for food purchases
+- Automatic waste reduction detection
+- Receipt analysis and categorization
+- Spending pattern insights
 
-2. **Configure OAuth Redirect**
-   ```
-   Redirect URI: http://localhost:3000/auth/monzo/callback
-   ```
+**Setup:**
+1. Register for UberEats Developer API
+2. Configure OAuth for secure authentication
+3. Set up webhook endpoints for real-time updates
 
-3. **Authentication Flow**
-   - Users click "Connect Monzo"
-   - OAuth flow redirects to Monzo
-   - Tokens stored securely for API calls
+### Transaction Verification Flow
 
-### Purchase Verification
+1. **Purchase Detection** - Monitor food-related transactions
+2. **Waste Correlation** - Match purchases with waste reduction claims
+3. **AI Analysis** - Verify logical consistency
+4. **Token Reward** - Automatic FWT minting for verified reductions
 
-The system automatically:
-- Fetches recent food-related transactions
-- Matches purchases with waste reduction claims
-- Provides additional verification context
+## 🔥 Firebase & Supabase Integration
+
+### Firebase Features
+- **Real-time Database** - Live updates across all users
+- **Authentication** - Secure user management
+- **Cloud Functions** - Serverless backend processing
+- **Analytics** - User behavior tracking
+
+### Supabase Features
+- **PostgreSQL Database** - Robust data storage
+- **Row Level Security** - Fine-grained permissions
+- **Real-time subscriptions** - Live data updates
+- **RESTful API** - Easy integration
 
 ## 🧪 Testing
 
@@ -184,35 +236,19 @@ npm run test:integration
 
 # Voice processing tests
 npm run test:voice
+
+# AI system tests
+npm run test:ai
 ```
 
 ### Test Coverage
 
 - ✅ Smart contract functions
 - ✅ Voice processing pipeline
-- ✅ AI verification system
+- ✅ Dual AI verification system
 - ✅ Wallet integration
-- ✅ Bank API interactions
-
-### Testing Guide
-
-1. **Local Development**
-   ```bash
-   npm run dev
-   npm test
-   ```
-
-2. **Smart Contract Testing**
-   ```bash
-   cd contracts
-   npx hardhat compile
-   npx hardhat test
-   ```
-
-3. **Voice Testing**
-   - Use test audio files in `/test/audio/`
-   - Mock 11Labs API responses
-   - Verify speech-to-text accuracy
+- ✅ Banking API interactions
+- ✅ Firebase/Supabase integration
 
 ## 🏗️ Architecture
 
@@ -223,44 +259,49 @@ frontend/src/
 ├── app/
 │   ├── page.tsx              # Main application
 │   ├── layout.tsx            # App layout
-│   └── api/ai/route.ts       # AI verification API
+│   └── api/
+│       ├── ai/route.ts       # AI verification API
+│       ├── gemini/route.ts   # Google Gemini integration
+│       └── openai/route.ts   # Azure OpenAI integration
 ├── components/
 │   ├── Dashboard/            # Dashboard components
 │   ├── LogWaste/            # Waste logging forms
+│   ├── VoiceInterface/      # Voice interaction components
 │   ├── Sidebar.tsx          # Navigation
 │   └── WalletConnectionButton.tsx
 ├── services/
 │   ├── ElevenLabsService.ts  # Voice integration
 │   ├── ContractInteraction.ts # Blockchain calls
-│   ├── AzureAIService.ts    # AI verification
-│   └── MonzoService.ts      # Bank integration
+│   ├── GeminiService.ts     # Google Gemini AI
+│   ├── OpenAIService.ts     # Azure OpenAI integration
+│   ├── FirebaseService.ts   # Firebase integration
+│   ├── SupabaseService.ts   # Supabase integration
+│   └── UberEatsService.ts   # Banking integration
+├── lib/
+│   ├── firebase.ts          # Firebase configuration
+│   ├── supabase.ts          # Supabase configuration
+│   └── ai-fallback.ts       # AI fallback logic
 └── types/
     └── index.ts             # TypeScript definitions
 ```
 
-### Smart Contract
-
-```
-contracts/
-└── FoodWasteToken.sol       # ERC-20 token with waste logging
-```
-
 ### Key Services
 
-1. **Voice Service** (`ElevenLabsService.ts`)
+1. **AI Service** (`GeminiService.ts` + `OpenAIService.ts`)
+   - Primary: Google Gemini for fast, cost-effective processing
+   - Fallback: Azure OpenAI for complex reasoning
+   - Automatic failover and load balancing
+
+2. **Voice Service** (`ElevenLabsService.ts`)
    - Speech-to-text conversion
    - Natural language processing
    - Text-to-speech responses
+   - Multiple voice options (Tasha, Chef Mia)
 
-2. **Blockchain Service** (`ContractInteraction.ts`)
+3. **Blockchain Service** (`ContractInteraction.ts`)
    - Wallet connections
    - Smart contract interactions
    - Transaction management
-
-3. **AI Verification** (`AzureAIService.ts`)
-   - Image analysis
-   - Claim verification
-   - Confidence scoring
 
 ## 🌍 Environmental Impact
 
@@ -276,6 +317,7 @@ contracts/
 - CO₂ emissions prevented (kg)
 - FWT tokens earned
 - Community ranking
+- Firebase Analytics integration
 
 ## 🔧 Development
 
@@ -296,43 +338,62 @@ npm run test:coverage # Coverage report
 npm run contract:compile  # Compile contracts
 npm run contract:deploy   # Deploy to testnet
 npm run contract:verify   # Verify on explorer
+
+# Database
+npm run db:migrate   # Run Supabase migrations
+npm run db:seed      # Seed database with test data
 ```
 
-### Contributing
+### Environment Setup Guide
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+1. **Create accounts for all services:**
+   - Google Cloud (for Gemini API)
+   - Microsoft Azure (for OpenAI)
+   - 11Labs (for voice)
+   - Firebase (for real-time features)
+   - Supabase (for database)
+   - UberEats Developer Portal
 
-### Development Workflow
+2. **Configure API keys in `.env.local`**
 
-1. **Backend Changes**: Update services in `/src/services/`
-2. **Frontend Changes**: Update components in `/src/components/`
-3. **Contract Changes**: Update `/contracts/FoodWasteToken.sol`
-4. **Tests**: Add tests for all new functionality
+3. **Set up database schemas:**
+   ```bash
+   npm run db:migrate
+   npm run db:seed
+   ```
+
+4. **Test all integrations:**
+   ```bash
+   npm run test:integration
+   ```
 
 ## 📊 Roadmap
 
-### ✅ Milestone 1 (Current)
+### ✅ Milestone 1 (Completed)
 - [x] Basic frontend with wallet integration
-- [x] Smart contract development
-- [ ] 11Labs voice integration
-- [ ] Monzo API integration
-- [ ] AI verification system
+- [x] Smart contract deployment
+- [x] Package.json dependency fixes
+- [x] Development environment setup
 
-### 🚧 Milestone 2 (Next)
+### 🚧 Milestone 2 (In Progress)
+- [ ] Dual AI system implementation (Gemini + OpenAI)
+- [ ] 11Labs voice integration
+- [ ] UberEats API integration
+- [ ] Firebase/Supabase setup
+- [ ] Basic voice commands
+
+### 🔮 Milestone 3 (Next)
 - [ ] Advanced AI verification
 - [ ] Location-based features
 - [ ] NFT achievements
 - [ ] Community leaderboards
+- [ ] Mobile application
 
-### 🔮 Future Plans
-- Mobile applications (iOS/Android)
-- Food delivery integrations
+### 🚀 Future Plans
 - Cross-chain compatibility
 - Enterprise solutions
+- Restaurant partnerships
+- Global scaling
 
 ## 🤝 Community & Support
 
@@ -358,35 +419,21 @@ This project is funded by the **Polkadot Fast-Grants Programme**:
 
 ## 📄 License
 
-<<<<<<< HEAD
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-=======
-MIT License
->>>>>>> 8049455715a83d733b9573a8b42a2d0c1b028c2c
 
 ## 🙏 Acknowledgments
 
 - **Polkadot Fast-Grants Programme** for funding
 - **EasyA Hackathon** for the initial platform
 - **11Labs** for voice technology
-- **Microsoft Azure** for AI services
+- **Google** for Gemini AI services
+- **Microsoft Azure** for OpenAI services
+- **Firebase** for real-time infrastructure
+- **Supabase** for database services
 - **Polkadot community** for ongoing support
 
 ---
 
-<<<<<<< HEAD
 **Making food waste reduction conversational, verifiable, and rewarding.**
 
 *Built with ❤️ for the Polkadot ecosystem*
-=======
-Peter - HeySalad Team
-- Email: peter@heysalad.io
-- Project Link: https://github.com/Hey-Salad/Tasha
-
-## 🙏 Acknowledgements
-
-- Polkadot Hackathon
-- Azure AI Services
-- ElevenLabs Voice AI
-- Open-source community
->>>>>>> 8049455715a83d733b9573a8b42a2d0c1b028c2c
