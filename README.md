@@ -31,6 +31,7 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 - 📱 **Mobile Hamburger Menu** with smooth slide animations
 - 🎯 **Professional Components** with hover effects and micro-interactions
 - 🔄 **Smooth Animations** throughout the interface
+- 📋 **Swipeable Cards** for better mobile UX in analysis results
 
 ---
 
@@ -48,10 +49,10 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 - **Wallet Support**: Polkadot{.js}, Talisman, SubWallet
 - **Features**: Message signing, transaction support, persistent connections
 
-### Planned Integrations
+### AI & Voice Integration
 - **AI Analysis**: Google Gemini API for food image analysis
-- **Voice Interface**: 11Labs for conversational interactions
-- **Backend**: Firebase + Supabase for data management
+- **Voice Interface**: 11Labs for conversational interactions (ready for integration)
+- **Backend**: Firebase + Supabase architecture planned
 - **Banking**: Monzo API for transaction verification (in development)
 
 ---
@@ -61,9 +62,17 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 ### ✅ Wallet Integration
 - **Polkadot Wallet Connection**: Support for multiple wallet extensions
 - **Persistent Sessions**: Auto-reconnect within 24 hours
-- **Message Signing**: Ready for authentication and verification
+- **Message Signing**: Cryptographic authentication for features
 - **Balance Display**: Real-time token balance from Westend testnet
 - **Account Management**: Multiple account support with easy switching
+
+### ✅ Image Analysis (Live)
+- **Camera Integration**: Native camera support for iOS/Android
+- **File Upload**: Support for JPEG, PNG, WebP, MP4, WebM, MOV
+- **Mobile Optimized**: Environment camera (back camera) on mobile devices
+- **AI Food Analysis**: Google Gemini API integration for food recognition
+- **Swipeable Results**: 5 card interface for better mobile UX
+- **Selective Minting**: Users choose what analysis data to tokenize
 
 ### ✅ Professional Interface
 - **Time-Based Greeting**: Dynamic welcome message based on time of day
@@ -77,25 +86,70 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 - **Professional Sidebar**: HeySalad branding with navigation
 - **Smooth Animations**: Hover effects and transitions
 - **Touch Optimization**: Mobile-first interaction design
+- **Card-Based Results**: Swipeable interface prevents excessive scrolling
+
+---
+
+## 📱 Mobile-First Design
+
+### Enhanced Mobile Features
+- **🍔 Hamburger Menu**: Smooth slide-in navigation
+- **📸 Native Camera**: Environment camera for food photos
+- **👆 Touch Optimization**: 44px minimum touch targets
+- **📐 Adaptive Layouts**: Responsive grid systems
+- **🎨 Progressive Enhancement**: Mobile base with desktop enhancements
+- **📋 Swipeable Cards**: Better content navigation on small screens
+
+### Cross-Platform Support
+- **📱 iOS Support**: Native camera integration, proper video formats
+- **🤖 Android Support**: Environment camera, WebM/MP4 video support
+- **💻 Desktop**: Enhanced with larger layouts and hover effects
+- **🔄 File Upload**: Support for gallery/camera roll selection
+
+### Accessibility
+- **Keyboard Navigation**: Full keyboard support
+- **Screen Reader**: Semantic HTML and ARIA labels
+- **Color Contrast**: WCAG 2.1 AA compliance
+- **Focus Management**: Clear focus indicators
+
+---
+
+## 🎯 User Experience Flow
+
+### Current Working Flow
+1. **Visit Dashboard** → [tasha.heysalad.app](https://tasha.heysalad.app/)
+2. **Connect Wallet** → Choose from Polkadot{.js}, Talisman, or SubWallet
+3. **Image Analysis** → Click "Image Analysis" button
+4. **Authenticate** → Sign message with wallet for AI access
+5. **Capture/Upload** → Take photo, record video, or upload file
+6. **AI Analysis** → Google Gemini analyzes food automatically
+7. **Swipe Results** → Navigate through 5 analysis cards:
+   - Overview & confidence score
+   - Analysis results (freshness, nutrition, etc.)
+   - Environmental impact (CO2, water footprint)
+   - Action recommendations (journal, recipes, waste tips)
+   - Selective minting options
+8. **Choose Minting** → Select which data to tokenize
+9. **Sign & Mint** → Cryptographic signing for token creation
 
 ---
 
 ## 🔄 In Development
 
 ### 🛠️ Next Phase Features
-- **📸 Image Analysis Page**: Camera integration for food analysis
 - **🎤 Voice Assistant Page**: 11Labs integration for voice logging
-- **🤖 AI Food Analysis**: Computer vision for food type/freshness detection
-- **⚡ Selective Minting**: Users choose what results to tokenize
-- **🔐 Signature-Gated Features**: Wallet signing before AI analysis
+- **🤖 Enhanced AI**: Integration with 11Labs conversational AI
+- **💾 Firebase Backend**: Data persistence and user profiles
+- **⚡ Token Minting**: Actual blockchain token creation
+- **🔐 Advanced Authentication**: Multi-factor wallet security
 
-### 🎯 Planned User Flow
-1. **Connect Wallet** → Persistent authentication
-2. **Sign Message** → Authorize AI feature access  
-3. **Analyze Food** → Camera or voice input
-4. **Get Results** → AI analysis with confidence scores
-5. **Choose Actions** → Journal, recipe generation, or waste tracking
-6. **Mint Tokens** → Selective tokenization of valuable data
+### 🎯 Planned Voice Features
+1. **Voice Conversations** → Natural food discussions with AI
+2. **Speech Recognition** → Convert voice to structured data
+3. **AI Responses** → 11Labs voice synthesis for replies
+4. **Food Logging** → Voice-powered waste reduction tracking
+5. **Recipe Suggestions** → Spoken recipe recommendations
+6. **Minting Integration** → Voice approval for token creation
 
 ---
 
@@ -109,6 +163,11 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 - TypeScript 5
 - Custom CSS with CSS Variables
 - Lucide React Icons
+
+// AI Integration
+- Google Gemini API (Food Analysis)
+- 11Labs API (Voice - Ready)
+- Custom analysis pipelines
 
 // Blockchain
 - @polkadot/api
@@ -125,22 +184,7 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 - **Client-Side Wallet**: Browser extension integration for security
 - **Persistent State**: localStorage for wallet connection persistence
 - **Message Signing**: Cryptographic authentication for feature access
-
----
-
-## 📱 Mobile-First Design
-
-### Responsive Features
-- **🍔 Hamburger Menu**: Smooth slide-in navigation
-- **👆 Touch Optimization**: 44px minimum touch targets
-- **📐 Adaptive Layouts**: Responsive grid systems
-- **🎨 Progressive Enhancement**: Mobile base with desktop enhancements
-
-### Accessibility
-- **Keyboard Navigation**: Full keyboard support
-- **Screen Reader**: Semantic HTML and ARIA labels
-- **Color Contrast**: WCAG 2.1 AA compliance
-- **Focus Management**: Clear focus indicators
+- **Mobile-First**: Environment camera and touch optimization
 
 ---
 
@@ -148,15 +192,23 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 
 ### Current Status
 - **✅ Production Ready**: Live at [tasha.heysalad.app](https://tasha.heysalad.app/)
-- **✅ Mobile Optimized**: Perfect mobile experience
+- **✅ Mobile Optimized**: Perfect mobile experience with native camera
 - **✅ Wallet Integration**: Full Polkadot wallet support
+- **✅ AI Analysis**: Working Google Gemini food analysis
 - **✅ Dark Theme**: Professional interface complete
+- **✅ Swipeable UX**: Card-based results for mobile
 
-### Next Deployment Features
-- **📸 Image Analysis**: Camera-based food analysis (in development)
-- **🎤 Voice Assistant**: Voice-powered logging (in development)
-- **🤖 AI Integration**: Google Gemini API (planned)
-- **🏦 Banking**: Monzo integration (planned)
+### Environment Setup
+```bash
+# Required API Keys
+NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_key_here
+NEXT_PUBLIC_ELEVENLABS_API_KEY=your_elevenlabs_key_here
+NEXT_PUBLIC_ELEVENLABS_AGENT_ID=your_agent_id_here
+
+# Optional for future features
+NEXT_PUBLIC_MONZO_CLIENT_ID=your_monzo_client_id
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_key
+```
 
 ---
 
@@ -168,6 +220,8 @@ Node.js 18+
 npm or yarn
 Git
 Polkadot wallet extension (for testing)
+Google Gemini API key
+11Labs API key (for voice features)
 ```
 
 ### Quick Start
@@ -179,40 +233,52 @@ cd polkadot-hackathon/frontend
 # Install dependencies
 npm install
 
+# Add environment variables
+cp .env.example .env.local
+# Add your API keys to .env.local
+
 # Start development server
 npm run dev
 
 # Visit http://localhost:3000
 ```
 
-### Environment Setup
+### Testing Features
 ```bash
-# Copy environment template
-cp .env.example .env.local
+# Test image analysis
+1. Connect a Polkadot wallet
+2. Navigate to /image-analysis
+3. Take a photo of food
+4. Review AI analysis results
+5. Test selective minting options
 
-# Add your API keys (when ready for AI features)
-NEXT_PUBLIC_GEMINI_API_KEY=your_key_here
-NEXT_PUBLIC_ELEVENLABS_API_KEY=your_key_here
+# Test mobile features
+1. Open on mobile device
+2. Test environment camera
+3. Upload from camera roll
+4. Swipe through result cards
+5. Test responsive navigation
 ```
 
 ---
 
 ## 📊 Project Status
 
-### ✅ Completed (Current Phase)
+### ✅ Completed Features
 - [x] **Professional Dark Theme** - Complete black interface
 - [x] **Wallet Integration** - Polkadot wallet connection with persistence
-- [x] **Mobile Responsive** - Perfect mobile experience
+- [x] **Mobile Camera** - Native iOS/Android camera support
+- [x] **AI Food Analysis** - Google Gemini integration
+- [x] **Swipeable Results** - Card-based mobile UX
+- [x] **Message Signing** - Cryptographic authentication
 - [x] **Production Deployment** - Live at tasha.heysalad.app
-- [x] **Message Signing** - Ready for authentication
-- [x] **Professional UI** - Lucide icons, clean design
+- [x] **Cross-Platform** - iOS, Android, desktop support
 
-### 🔄 In Progress (Next Phase)
-- [ ] **Image Analysis Page** - Camera integration for food analysis
+### 🔄 In Progress
 - [ ] **Voice Assistant Page** - 11Labs voice integration
-- [ ] **AI Food Analysis** - Google Gemini API integration
 - [ ] **Firebase Backend** - Data management system
-- [ ] **Selective Minting** - User-controlled tokenization
+- [ ] **Token Minting** - Actual blockchain token creation
+- [ ] **Advanced Analytics** - Food waste tracking over time
 
 ### 🎯 Planned Features
 - [ ] **Monzo Integration** - Banking transaction verification
@@ -235,7 +301,8 @@ This project is being developed as part of a **Polkadot Fast Grant** focused on:
 
 ### Deliverables Progress
 - **✅ Milestone 1**: Professional dApp interface with wallet integration
-- **🔄 Milestone 2**: AI analysis and voice assistant features (in development)
+- **✅ Milestone 1.5**: AI food analysis with mobile camera support
+- **🔄 Milestone 2**: Voice assistant and token minting (in development)
 
 ---
 
@@ -246,6 +313,58 @@ We welcome contributions from developers interested in sustainability and blockc
 ### Development Guidelines
 - 🎨 Follow HeySalad dark theme design system
 - 🔧 Use professional Lucide React icons
+- 📱 Ensure mobile responsiveness with touch optimization
+- 🧪 Add tests for new features
+- 📝 Update documentation
+
+### Getting Started
+```bash
+# Fork the repository
+git fork https://github.com/your-username/polkadot-hackathon.git
+
+# Create feature branch
+git checkout -b feature/amazing-feature
+
+# Make your changes
+# Commit and push
+# Open Pull Request
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 📞 Contact & Links
+
+### Team
+- **Lead Developer**: [@chilumbam](https://github.com/chilu18)
+- **Organization**: SALADHR TECHNOLOGY LTD
+
+### Project Links
+- **🌐 Live App**: [https://tasha.heysalad.app/](https://tasha.heysalad.app/)
+- **📱 Main Website**: [https://heysalad.io/](https://heysalad.io/)
+- **🤖 AI Platform**: [https://ai.heysalad.app/](https://ai.heysalad.app/)
+- **📧 Contact**: peter@heysalad.io
+
+### Development
+- **🐛 Issues**: [GitHub Issues](https://github.com/your-username/polkadot-hackathon/issues)
+- **💡 Discussions**: [GitHub Discussions](https://github.com/your-username/polkadot-hackathon/discussions)
+
+---
+
+<div align="center">
+
+**🥗 Making food analysis accessible through AI and blockchain technology! 🌱**
+
+Built with ❤️ for the Polkadot ecosystem
+
+[⭐ Star this repo](https://github.com/your-username/polkadot-hackathon) • [🍴 Fork it](https://github.com/your-username/polkadot-hackathon/fork) • [🚀 Try the demo](https://tasha.heysalad.app/)
+
+</div> Lucide React icons
 - 📱 Ensure mobile responsiveness
 - 🧪 Add tests for new features
 - 📝 Update documentation

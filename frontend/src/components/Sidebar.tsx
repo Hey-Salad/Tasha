@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, Camera, Mic, CreditCard } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { BarChart3, Camera, Mic, CreditCard, ExternalLink } from 'lucide-react';
 
 type SidebarProps = {
   activeTab: string;
@@ -7,6 +8,7 @@ type SidebarProps = {
 };
 
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
+  const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -19,6 +21,28 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  const handleNavigation = (item: any) => {
+    setActiveTab(item.id);
+    
+    // Navigate to the appropriate route
+    switch (item.id) {
+      case 'dashboard':
+        router.push('/');
+        break;
+      case 'image-analysis':
+        router.push('/image-analysis');
+        break;
+      case 'voice-assistant':
+        router.push('/voice-assistant');
+        break;
+      case 'banking':
+        router.push('/banking');
+        break;
+      default:
+        router.push('/');
+    }
+  };
 
   const sidebarStyle: React.CSSProperties = {
     width: isMobile ? '280px' : '320px',
@@ -91,6 +115,29 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     lineHeight: '1.3'
   };
 
+  const grantSectionStyle: React.CSSProperties = {
+    padding: '12px 16px',
+    background: 'rgba(230, 0, 122, 0.1)',
+    borderRadius: '12px',
+    border: '1px solid rgba(230, 0, 122, 0.2)',
+    textAlign: 'center'
+  };
+
+  const grantTitleStyle: React.CSSProperties = {
+    fontSize: '11px',
+    fontWeight: '600',
+    color: '#e6007a',
+    marginBottom: '2px',
+    fontFamily: 'Figtree, sans-serif'
+  };
+
+  const grantTextStyle: React.CSSProperties = {
+    fontSize: '10px',
+    color: '#cccccc',
+    lineHeight: '1.2',
+    margin: 0
+  };
+
   const contractSectionStyle: React.CSSProperties = {
     marginTop: 'auto',
     padding: '20px',
@@ -138,25 +185,29 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       id: 'dashboard',
       icon: BarChart3,
       label: 'Dashboard',
-      description: 'Overview & wallet'
+      description: 'Overview & wallet',
+      available: true
     },
     {
       id: 'image-analysis',
       icon: Camera,
       label: 'Image Analysis',
-      description: 'AI food analysis'
+      description: 'AI food analysis',
+      available: true
     },
     {
       id: 'voice-assistant',
       icon: Mic,
       label: 'Voice Assistant',
-      description: 'Voice food logging'
+      description: 'Voice food logging',
+      available: true
     },
     {
       id: 'banking',
       icon: CreditCard,
       label: 'Banking',
-      description: 'Future integration'
+      description: 'Monzo integration',
+      available: true
     }
   ];
 
@@ -171,6 +222,16 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         />
       </div>
 
+      {/* Grant Acknowledgment */}
+      <div style={grantSectionStyle}>
+        <div style={grantTitleStyle}>
+          Funded by Polkadot
+        </div>
+        <div style={grantTextStyle}>
+          Proudly supported by the Polkadot Fast Grant Program
+        </div>
+      </div>
+
       {/* Navigation Menu */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {menuItems.map((item) => {
@@ -180,17 +241,21 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           return (
             <div
               key={item.id}
-              style={menuItemStyle(isActive)}
-              onClick={() => setActiveTab(item.id)}
+              style={{
+                ...menuItemStyle(isActive),
+                opacity: item.available ? 1 : 0.6,
+                cursor: item.available ? 'pointer' : 'not-allowed'
+              }}
+              onClick={() => item.available && handleNavigation(item)}
               onMouseEnter={(e) => {
-                if (!isActive) {
+                if (!isActive && item.available) {
                   e.currentTarget.style.background = 'rgba(237, 76, 76, 0.1)';
                   e.currentTarget.style.transform = 'translateY(-1px)';
                   e.currentTarget.style.boxShadow = '0 4px 16px rgba(237, 76, 76, 0.2)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isActive) {
+                if (!isActive && item.available) {
                   e.currentTarget.style.background = 'transparent';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
@@ -199,9 +264,23 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
             >
               <IconComponent style={menuIconStyle(isActive)} />
               <div style={{ flex: 1 }}>
-                <div style={menuTextStyle(isActive)}>{item.label}</div>
+                <div style={menuTextStyle(isActive)}>
+                  {item.label}
+                  {!item.available && (
+                    <span style={{ fontSize: '10px', opacity: 0.6 }}> (Soon)</span>
+                  )}
+                </div>
                 <div style={menuDescStyle}>{item.description}</div>
               </div>
+              {item.available && (
+                <ExternalLink 
+                  size={14} 
+                  style={{ 
+                    color: isActive ? '#ffffff' : '#666666',
+                    opacity: 0.5
+                  }} 
+                />
+              )}
             </div>
           );
         })}

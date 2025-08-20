@@ -1,107 +1,354 @@
-import { WasteType } from '../types/index';
+// services/elevenLabsService.ts
+// 11Labs Voice Assistant Integration for HeySalad Tasha
 
-// Define interfaces based on 11Labs API
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
+const ELEVENLABS_API_KEY = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY;
+const ELEVENLABS_AGENT_ID = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID;
+
+export interface VoiceConversation {
+  id: string;
+  transcript: string;
+  analysis: FoodVoiceAnalysis;
+  audioUrl?: string;
+  timestamp: string;
 }
 
-interface ErrorEvent {
-  message: string;
+export interface FoodVoiceAnalysis {
+  food_items: string[];
+  waste_reduction_actions: string[];
+  sustainability_insights: string[];
+  recipe_suggestions: string[];
+  confidence_score: number;
+  conversation_summary: string;
 }
 
-export interface ConversationMessage {
-  source: 'user' | 'ai';
-  message: string;
+export interface VoiceSessionConfig {
+  voice_id?: string;
+  language?: string;
+  response_format?: 'mp3' | 'wav';
+  stability?: number;
+  similarity_boost?: number;
 }
 
-// Define our own configuration interface based on the documentation
-interface ElevenLabsConversationConfig {
-  apiKey: string;
-  voiceId: string;
-  conversationId: string;
-  systemPrompt: string;
-  firstMessage: string;
-  onConnect: () => void;
-  onDisconnect: () => void;
-  onMessage: (message: Message) => void;
-  onError: (error: ErrorEvent) => void;
-}
-
-export class ElevenLabsService {
+class ElevenLabsVoiceService {
   private apiKey: string;
+  private agentId: string;
+  private baseURL = 'https://api.elevenlabs.io/v1';
   
   constructor() {
-    // In a real app, get this from env variables
-    this.apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '';
+    if (!ELEVENLABS_API_KEY) {
+      throw new Error('11Labs API key not configured. Please add NEXT_PUBLIC_ELEVENLABS_API_KEY to your environment.');
+    }
+    
+    if (!ELEVENLABS_AGENT_ID) {
+      throw new Error('11Labs Agent ID not configured. Please add NEXT_PUBLIC_ELEVENLABS_AGENT_ID to your environment.');
+    }
+    
+    this.apiKey = ELEVENLABS_API_KEY;
+    this.agentId = ELEVENLABS_AGENT_ID;
   }
-  
-  createWasteLoggerConversation(
-    onConnect: () => void,
-    onDisconnect: () => void,
-    onMessage: (message: ConversationMessage) => void,
-    onError: (error: string) => void
-  ): ElevenLabsConversationConfig {
-    return {
-      apiKey: this.apiKey,
-      voiceId: "REPLACE_WITH_YOUR_VOICE_ID", // Use Tasha's voice ID
-      conversationId: "waste-logger-" + Date.now(),
-      systemPrompt: `You are Tasha, an enthusiastic and knowledgeable food waste reduction specialist for HeySalad. Your voice is energetic, encouraging, and passionate about sustainability. You speak with friendly authority on food waste topics and maintain a supportive, solution-oriented approach.
 
-As Tasha, you help users track and reduce their food waste through three main activities:
-1. Food Donations: You help users document when they donate excess food to shelters, food banks, or community programs, explaining the positive impact and suggesting local donation options.
-2. Efficient Delivery: You guide users in logging optimized delivery routes, improved packaging, or temperature control methods that extend shelf life and prevent spoilage during transport.
-3. Using Before Expiry: You assist users in recording when they've used ingredients before they expire, suggest creative recipes for leftover ingredients, and offer storage tips to extend freshness.
+  /**
+   * Start a voice conversation session with HeySalad Tasha
+   */
+  async startVoiceSession(config: VoiceSessionConfig = {}): Promise<string> {
+    try {
+      const response = await fetch(`${this.baseURL}/conversational-ai/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': this.apiKey
+        },
+        body: JSON.stringify({
+          agent_id: this.agentId,
+          ...config
+        })
+      });
 
-Always prioritize accuracy in waste reporting. When users describe their waste reduction activities, help them quantify the amount (in grams) and categorize it correctly. Ask clarifying questions to ensure proper documentation before verification.
-
-Keep responses under 3-4 sentences when possible, use positive, encouraging language, and mention the token rewards to motivate continued participation.`,
-      firstMessage: "Hello! I'm Tasha, your HeySalad food waste reduction assistant. I'm here to help you log and verify your food waste reduction efforts so you can earn FWT tokens! Tell me about your recent food donation, efficient delivery method, or how you've used ingredients before they expired. How have you reduced food waste today?",
-      onConnect,
-      onDisconnect,
-      onMessage: (message: Message) => {
-        const parsedMessage: ConversationMessage = {
-          source: message.role === 'user' ? 'user' : 'ai',
-          message: message.content,
-        };
-        onMessage(parsedMessage);
-      },
-      onError: (error: ErrorEvent) => {
-        onError(error.message || 'Unknown error occurred');
+      if (!response.ok) {
+        throw new Error(`Failed to start voice session: ${response.statusText}`);
       }
-    };
-  }
-  
-  startConversation(conversation: any): void {
-    // This automatically triggers the first message from the assistant
-    // No need to send a user message first
+
+      const data = await response.json();
+      return data.conversation_id;
+    } catch (error) {
+      console.error('Error starting voice session:', error);
+      throw error;
+    }
   }
 
-  sendWasteReductionDescription(
-    conversation: any, 
-    description: string, 
-    amount: number, 
-    type: WasteType
-  ): void {
-    if (!conversation) return;
-    
-    const formattedType = type === 'donation' 
-      ? 'Food Donation' 
-      : type === 'efficient-delivery' 
-        ? 'Efficient Delivery' 
-        : 'Used Before Expiry';
-    
-    const message = `I've reduced ${amount} grams of food waste through ${formattedType}. Here's what I did: ${description}`;
-    
-    conversation.sendMessage(message);
+  /**
+   * Send audio input to the voice assistant
+   */
+  async sendVoiceInput(
+    conversationId: string, 
+    audioBlob: Blob,
+    userMessage?: string
+  ): Promise<VoiceConversation> {
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'voice-input.wav');
+      
+      if (userMessage) {
+        formData.append('text', userMessage);
+      }
+
+      const response = await fetch(
+        `${this.baseURL}/conversational-ai/conversations/${conversationId}/audio`,
+        {
+          method: 'POST',
+          headers: {
+            'xi-api-key': this.apiKey
+          },
+          body: formData
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to process voice input: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Process the response to extract food-related information
+      const analysis = await this.analyzeFoodConversation(data.transcript || userMessage || '');
+      
+      return {
+        id: conversationId,
+        transcript: data.transcript || userMessage || '',
+        analysis,
+        audioUrl: data.audio_url,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error processing voice input:', error);
+      throw error;
+    }
   }
-  
-  endSession(conversation: any): void {
-    if (conversation && conversation.disconnect) {
-      conversation.disconnect();
+
+  /**
+   * Analyze conversation transcript for food-related content
+   */
+  private async analyzeFoodConversation(transcript: string): Promise<FoodVoiceAnalysis> {
+    try {
+      // Use AI to analyze the conversation for food-related content
+      const analysisPrompt = `
+        Analyze this food-related conversation and extract structured information:
+        "${transcript}"
+        
+        Return ONLY a JSON response with this structure:
+        {
+          "food_items": ["list of mentioned foods"],
+          "waste_reduction_actions": ["actions taken to reduce waste"],
+          "sustainability_insights": ["environmental insights mentioned"],
+          "recipe_suggestions": ["any recipe ideas discussed"],
+          "confidence_score": 0.95,
+          "conversation_summary": "brief summary of the conversation"
+        }
+      `;
+
+      // This would integrate with your existing AI service (Gemini)
+      // For now, we'll create a mock analysis
+      return {
+        food_items: this.extractFoodItems(transcript),
+        waste_reduction_actions: this.extractWasteActions(transcript),
+        sustainability_insights: this.extractSustainabilityInsights(transcript),
+        recipe_suggestions: this.extractRecipeSuggestions(transcript),
+        confidence_score: 0.85,
+        conversation_summary: `Discussed food and sustainability topics: ${transcript.substring(0, 100)}...`
+      };
+    } catch (error) {
+      console.error('Error analyzing food conversation:', error);
+      
+      // Return basic analysis if AI processing fails
+      return {
+        food_items: [],
+        waste_reduction_actions: [],
+        sustainability_insights: [],
+        recipe_suggestions: [],
+        confidence_score: 0.5,
+        conversation_summary: transcript.substring(0, 100) + '...'
+      };
+    }
+  }
+
+  /**
+   * Text-to-speech: Convert text response to audio
+   */
+  async textToSpeech(
+    text: string, 
+    voiceId: string = 'pNInz6obpgDQGcFmaJgB', // Default Tasha voice
+    config: VoiceSessionConfig = {}
+  ): Promise<Blob> {
+    try {
+      const response = await fetch(`${this.baseURL}/text-to-speech/${voiceId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': this.apiKey
+        },
+        body: JSON.stringify({
+          text,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: {
+            stability: config.stability || 0.75,
+            similarity_boost: config.similarity_boost || 0.75,
+            style: 0.5,
+            use_speaker_boost: true
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Text-to-speech failed: ${response.statusText}`);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error('Error in text-to-speech:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * End a voice conversation session
+   */
+  async endVoiceSession(conversationId: string): Promise<void> {
+    try {
+      await fetch(`${this.baseURL}/conversational-ai/conversations/${conversationId}`, {
+        method: 'DELETE',
+        headers: {
+          'xi-api-key': this.apiKey
+        }
+      });
+    } catch (error) {
+      console.error('Error ending voice session:', error);
+      // Don't throw here as this is cleanup
+    }
+  }
+
+  // Helper methods for extracting information from transcript
+  private extractFoodItems(transcript: string): string[] {
+    const foodKeywords = [
+      'apple', 'banana', 'bread', 'milk', 'cheese', 'chicken', 'beef', 'fish',
+      'vegetables', 'fruits', 'pasta', 'rice', 'salad', 'soup', 'sandwich'
+    ];
+    
+    const words = transcript.toLowerCase().split(/\s+/);
+    return foodKeywords.filter(keyword => 
+      words.some(word => word.includes(keyword))
+    );
+  }
+
+  private extractWasteActions(transcript: string): string[] {
+    const wasteKeywords = [
+      'composted', 'donated', 'saved', 'preserved', 'froze', 'stored',
+      'used leftovers', 'meal planned', 'reduced waste'
+    ];
+    
+    const actions: string[] = [];
+    const lowerTranscript = transcript.toLowerCase();
+    
+    wasteKeywords.forEach(keyword => {
+      if (lowerTranscript.includes(keyword)) {
+        actions.push(keyword);
+      }
+    });
+    
+    return actions;
+  }
+
+  private extractSustainabilityInsights(transcript: string): string[] {
+    const sustainabilityKeywords = [
+      'carbon footprint', 'environmental impact', 'sustainable', 'eco-friendly',
+      'reduce emissions', 'save water', 'local produce', 'organic'
+    ];
+    
+    const insights: string[] = [];
+    const lowerTranscript = transcript.toLowerCase();
+    
+    sustainabilityKeywords.forEach(keyword => {
+      if (lowerTranscript.includes(keyword)) {
+        insights.push(`Mentioned ${keyword}`);
+      }
+    });
+    
+    return insights;
+  }
+
+  private extractRecipeSuggestions(transcript: string): string[] {
+    const recipeKeywords = [
+      'recipe', 'cook', 'prepare', 'make', 'ingredients',
+      'stir fry', 'salad', 'soup', 'smoothie', 'bake'
+    ];
+    
+    const suggestions: string[] = [];
+    const lowerTranscript = transcript.toLowerCase();
+    
+    recipeKeywords.forEach(keyword => {
+      if (lowerTranscript.includes(keyword)) {
+        suggestions.push(`Recipe idea: ${keyword}`);
+      }
+    });
+    
+    return suggestions;
+  }
+
+  /**
+   * Get available voices for the assistant
+   */
+  async getAvailableVoices(): Promise<any[]> {
+    try {
+      const response = await fetch(`${this.baseURL}/voices`, {
+        headers: {
+          'xi-api-key': this.apiKey
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get voices: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.voices || [];
+    } catch (error) {
+      console.error('Error getting voices:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Check service health and configuration
+   */
+  async checkHealth(): Promise<{ status: string; message: string }> {
+    try {
+      const response = await fetch(`${this.baseURL}/user`, {
+        headers: {
+          'xi-api-key': this.apiKey
+        }
+      });
+
+      if (response.ok) {
+        return {
+          status: 'healthy',
+          message: '11Labs service is operational'
+        };
+      } else {
+        return {
+          status: 'error',
+          message: `API returned ${response.status}: ${response.statusText}`
+        };
+      }
+    } catch (error) {
+      return {
+        status: 'error',
+        message: `Service unavailable: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
     }
   }
 }
 
-// Create a singleton instance
-export const elevenLabsService = new ElevenLabsService();
+// Export a singleton instance
+export const elevenLabsService = new ElevenLabsVoiceService();
+
+// Export types and service
+export default elevenLabsService;
