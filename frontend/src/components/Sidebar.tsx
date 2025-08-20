@@ -1,13 +1,5 @@
-// components/Sidebar.tsx
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { 
-  BarChart3, 
-  Trash2, 
-  History, 
-  CreditCard,
-  ExternalLink
-} from 'lucide-react';
+import { BarChart3, Camera, Mic, CreditCard } from 'lucide-react';
 
 type SidebarProps = {
   activeTab: string;
@@ -29,295 +21,210 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   }, []);
 
   const sidebarStyle: React.CSSProperties = {
-    width: '260px',
-    backgroundColor: '#000000',
-    color: 'white',
-    padding: '24px 0',
-    boxShadow: '0 0 15px rgba(237,76,76,0.4)',
-    borderRight: '2px solid #333333',
-    height: '100vh',
-    display: 'flex',
-    flexDirection: 'column'
-  };
-
-  const logoSectionStyle: React.CSSProperties = {
-    padding: '0 24px 24px 24px',
-    borderBottom: '2px solid rgba(255,255,255,0.1)',
-    marginBottom: '32px',
+    width: isMobile ? '280px' : '320px',
+    minHeight: '100vh',
+    background: 'linear-gradient(180deg, #000000 0%, #111111 50%, #000000 100%)',
+    padding: '32px 24px',
+    borderRight: '3px solid #333333',
+    boxShadow: '4px 0 20px rgba(237, 76, 76, 0.15)',
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center'
+    gap: '32px',
+    fontFamily: 'Figtree, sans-serif',
+    position: 'relative',
+    overflow: 'hidden'
+  };
+
+  const logoContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: '24px',
+    borderBottom: '2px solid #333333',
+    marginBottom: '8px'
+  };
+
+  const logoStyle: React.CSSProperties = {
+    width: '160px',
+    height: '50px',
+    objectFit: 'contain'
+  };
+
+  const menuItemStyle = (isActive: boolean): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    padding: '16px 20px',
+    borderRadius: '20px',
+    cursor: 'pointer',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    background: isActive 
+      ? 'linear-gradient(135deg, #ed4c4c 0%, #faa09a 100%)' 
+      : 'transparent',
+    border: isActive 
+      ? '2px solid #ed4c4c' 
+      : '2px solid transparent',
+    boxShadow: isActive 
+      ? '0 8px 24px rgba(237, 76, 76, 0.3)' 
+      : '0 2px 8px rgba(0, 0, 0, 0.1)',
+    transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
+    color: isActive ? '#ffffff' : '#faa09a'
+  });
+
+  const menuIconStyle = (isActive: boolean): React.CSSProperties => ({
+    minWidth: '24px',
+    height: '24px',
+    color: isActive ? '#ffffff' : '#ed4c4c'
+  });
+
+  const menuTextStyle = (isActive: boolean): React.CSSProperties => ({
+    fontSize: '16px',
+    fontWeight: isActive ? '700' : '600',
+    color: isActive ? '#ffffff' : '#ffffff',
+    fontFamily: 'Figtree, sans-serif'
+  });
+
+  const menuDescStyle: React.CSSProperties = {
+    fontSize: '12px',
+    color: '#faa09a',
+    marginTop: '2px',
+    lineHeight: '1.3'
+  };
+
+  const contractSectionStyle: React.CSSProperties = {
+    marginTop: 'auto',
+    padding: '20px',
+    background: 'rgba(237, 76, 76, 0.1)',
+    borderRadius: '20px',
+    border: '2px solid #333333'
+  };
+
+  const contractTitleStyle: React.CSSProperties = {
+    fontSize: '14px',
+    fontWeight: '700',
+    color: '#ed4c4c',
+    marginBottom: '12px',
+    fontFamily: 'Grandstander, cursive'
+  };
+
+  const contractAddressStyle: React.CSSProperties = {
+    fontSize: '11px',
+    color: '#faa09a',
+    fontFamily: 'monospace',
+    wordBreak: 'break-all',
+    lineHeight: '1.4',
+    background: 'rgba(0, 0, 0, 0.3)',
+    padding: '8px',
+    borderRadius: '8px',
+    border: '1px solid #333333'
+  };
+
+  const networkBadgeStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '4px 8px',
+    background: '#28a74522',
+    color: '#28a745',
+    fontSize: '10px',
+    fontWeight: '600',
+    borderRadius: '12px',
+    marginTop: '8px',
+    border: '1px solid #28a74533'
   };
 
   const menuItems = [
-    { 
-      id: 'dashboard', 
-      label: 'Dashboard', 
+    {
+      id: 'dashboard',
       icon: BarChart3,
-      description: 'Overview & Stats'
+      label: 'Dashboard',
+      description: 'Overview & wallet'
     },
-    { 
-      id: 'log-waste', 
-      label: 'Log Waste', 
-      icon: Trash2,
-      description: 'Record Reductions'
+    {
+      id: 'image-analysis',
+      icon: Camera,
+      label: 'Image Analysis',
+      description: 'AI food analysis'
     },
-    { 
-      id: 'history', 
-      label: 'History', 
-      icon: History,
-      description: 'Past Transactions'
+    {
+      id: 'voice-assistant',
+      icon: Mic,
+      label: 'Voice Assistant',
+      description: 'Voice food logging'
     },
-    { 
-      id: 'monzo', 
-      label: 'Banking', 
+    {
+      id: 'banking',
       icon: CreditCard,
-      description: 'Monzo Integration'
+      label: 'Banking',
+      description: 'Future integration'
     }
   ];
 
   return (
-    <div style={sidebarStyle}>
+    <nav style={sidebarStyle}>
       {/* Logo Section */}
-      <div style={logoSectionStyle}>
-        <div style={{ 
-          position: 'relative', 
-          height: '45px', 
-          width: '140px', 
-          marginBottom: '12px' 
-        }}>
-          <Image 
-            src="/HeySalad Logo White.png" 
-            alt="HeySalad Logo" 
-            fill
-            style={{ 
-              objectFit: 'contain'
-            }} 
-          />
-        </div>
-        <p style={{ 
-          fontSize: isMobile ? '12px' : '13px', 
-          color: '#faa09a', 
-          textAlign: 'center',
-          margin: 0,
-          fontWeight: '500',
-          fontFamily: 'Figtree, sans-serif'
-        }}>
-          Food Waste Reduction Platform
-        </p>
+      <div style={logoContainerStyle}>
+        <img 
+          src="/HeySalad Logo White.png" 
+          alt="HeySalad Logo" 
+          style={logoStyle}
+        />
       </div>
-      
+
       {/* Navigation Menu */}
-      <nav style={{ flex: 1 }}>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          {menuItems.map((item) => (
-            <li key={item.id}>
-              <SidebarButton 
-                icon={item.icon}
-                label={item.label}
-                description={item.description}
-                isActive={activeTab === item.id}
-                onClick={() => setActiveTab(item.id)}
-                isMobile={isMobile}
-              />
-            </li>
-          ))}
-        </ul>
-      </nav>
-      
-      {/* Footer */}
-      <div style={{ 
-        padding: isMobile ? '16px' : '24px', 
-        marginTop: 'auto'
-      }}>
-        {/* Network Status */}
-        <div style={{
-          background: 'rgba(237, 76, 76, 0.1)',
-          border: '1px solid rgba(237, 76, 76, 0.3)',
-          borderRadius: '12px',
-          padding: '12px',
-          marginBottom: '16px'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '6px'
-          }}>
-            <div style={{
-              width: '8px',
-              height: '8px',
-              backgroundColor: '#28a745',
-              borderRadius: '50%'
-            }} />
-            <span style={{
-              fontSize: '12px',
-              fontWeight: '600',
-              color: '#ffffff',
-              fontFamily: 'Figtree, sans-serif'
-            }}>
-              Asset-Hub Westend
-            </span>
-          </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {menuItems.map((item) => {
+          const isActive = activeTab === item.id;
+          const IconComponent = item.icon;
           
-          <div style={{ 
-            fontSize: isMobile ? '10px' : '11px', 
-            color: '#faa09a',
-            fontFamily: 'Figtree, sans-serif'
-          }}>
-            Contract Address:
-          </div>
-          <div style={{ 
-            fontSize: isMobile ? '9px' : '10px', 
-            wordBreak: 'break-all', 
-            color: '#ffd0cd',
-            lineHeight: '1.4',
-            fontFamily: 'monospace',
-            marginBottom: '8px'
-          }}>
-            0x34F4EB3...647F1B0c
-          </div>
-          
-          <a 
-            href="https://blockscout-asset-hub.parity-chains-scw.parity.io/token/0x34F4EB3Cce74e851E389E6a9Ad0Ad61f647F1B0c" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              color: '#ed4c4c',
-              textDecoration: 'none',
-              fontSize: isMobile ? '10px' : '11px',
-              fontWeight: '500',
-              fontFamily: 'Figtree, sans-serif',
-              transition: 'color 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#faa09a';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#ed4c4c';
-            }}
-          >
-            View on Explorer
-            <ExternalLink size={12} />
-          </a>
-        </div>
+          return (
+            <div
+              key={item.id}
+              style={menuItemStyle(isActive)}
+              onClick={() => setActiveTab(item.id)}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = 'rgba(237, 76, 76, 0.1)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(237, 76, 76, 0.2)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                }
+              }}
+            >
+              <IconComponent style={menuIconStyle(isActive)} />
+              <div style={{ flex: 1 }}>
+                <div style={menuTextStyle(isActive)}>{item.label}</div>
+                <div style={menuDescStyle}>{item.description}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-        {/* Powered by */}
-        <div style={{ 
-          textAlign: 'center',
-          fontSize: '11px', 
-          color: '#666666',
-          fontFamily: 'Figtree, sans-serif'
-        }}>
-          Powered by Polkadot 🔗
+      {/* Contract Address Section */}
+      <div style={contractSectionStyle}>
+        <div style={contractTitleStyle}>
+          Smart Contract
+        </div>
+        <div style={contractAddressStyle}>
+          5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw
+        </div>
+        <div style={networkBadgeStyle}>
+          <div style={{ 
+            width: '6px', 
+            height: '6px', 
+            background: '#28a745', 
+            borderRadius: '50%' 
+          }} />
+          Polkadot Network
         </div>
       </div>
-    </div>
-  );
-}
-
-// Enhanced Sidebar Button Component
-type SidebarButtonProps = {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  label: string;
-  description: string;
-  isActive: boolean;
-  onClick: () => void;
-  isMobile?: boolean;
-};
-
-function SidebarButton({ 
-  icon: Icon, 
-  label, 
-  description, 
-  isActive, 
-  onClick, 
-  isMobile = false 
-}: SidebarButtonProps) {
-  const [isHovered, setIsHovered] = useState(false);
-
-  const buttonStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    width: '100%',
-    padding: isMobile ? '12px 16px' : '16px 24px',
-    margin: '2px 0',
-    backgroundColor: isActive 
-      ? 'rgba(237,76,76,0.15)' 
-      : isHovered 
-        ? 'rgba(255,255,255,0.08)' 
-        : 'transparent',
-    border: 'none',
-    color: isActive ? '#ffffff' : 'rgba(255,255,255,0.8)',
-    textAlign: 'left',
-    cursor: 'pointer',
-    borderLeft: isActive ? '4px solid #ed4c4c' : '4px solid transparent',
-    borderRadius: '0 12px 12px 0',
-    fontSize: isMobile ? '14px' : '15px',
-    fontWeight: isActive ? '600' : '500',
-    fontFamily: 'Figtree, sans-serif',
-    transition: 'all 0.3s ease',
-    outline: 'none',
-    position: 'relative'
-  };
-
-  const iconStyle: React.CSSProperties = {
-    marginRight: isMobile ? '12px' : '16px',
-    flexShrink: 0,
-    opacity: isActive ? 1 : 0.7,
-    transition: 'opacity 0.3s ease'
-  };
-
-  const textSectionStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px'
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: isMobile ? '14px' : '15px',
-    fontWeight: isActive ? '600' : '500',
-    color: isActive ? '#ffffff' : 'rgba(255,255,255,0.9)',
-    fontFamily: 'Figtree, sans-serif'
-  };
-
-  const descriptionStyle: React.CSSProperties = {
-    fontSize: '11px',
-    color: isActive ? '#ffd0cd' : 'rgba(255,255,255,0.5)',
-    fontFamily: 'Figtree, sans-serif',
-    fontWeight: '400'
-  };
-
-  return (
-    <button 
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={buttonStyle}
-    >
-      <div style={iconStyle}>
-        <Icon size={isMobile ? 18 : 20} />
-      </div>
-      
-      <div style={textSectionStyle}>
-        <div style={labelStyle}>{label}</div>
-        <div style={descriptionStyle}>{description}</div>
-      </div>
-
-      {/* Active indicator */}
-      {isActive && (
-        <div style={{
-          position: 'absolute',
-          right: '12px',
-          width: '6px',
-          height: '6px',
-          backgroundColor: '#ed4c4c',
-          borderRadius: '50%'
-        }} />
-      )}
-    </button>
+    </nav>
   );
 }

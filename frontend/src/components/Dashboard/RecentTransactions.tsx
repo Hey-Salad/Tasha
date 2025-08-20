@@ -135,7 +135,7 @@ export default function RecentTransactions({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {displayTransactions.map((transaction, index) => (
           <TransactionItem
-            key={transaction.id || index}
+            key={transaction.id || `transaction-${index}`}
             transaction={transaction}
             isHovered={hoveredIndex === index}
             onHover={() => setHoveredIndex(index)}

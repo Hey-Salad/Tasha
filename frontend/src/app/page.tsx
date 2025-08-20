@@ -1,42 +1,25 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 // Import Components
 import Sidebar from '../components/Sidebar';
-import WalletConnectionButton from '../components/WalletConnectionButton';
-import StatsCards from '../components/Dashboard/StatsCards';
-import RecentTransactions from '../components/Dashboard/RecentTransactions';
-import TransactionHistory from '../components/TransactionHistory';
-import WasteForm from '../components/LogWaste/WasteForm';
-import MonzoConnection from '../components/MonzoConnection';
+import WalletConnection from '../components/WalletConnection';
 
 // Import Icons
 import { 
-  Trash2, 
-  CreditCard, 
-  History,
-  Zap,
-  CheckCircle,
-  XCircle,
-  Globe
+  Camera, 
+  Mic,
+  ChevronUp,
+  ChevronDown,
+  Sparkles
 } from 'lucide-react';
-
-// Import Hooks and Services
-import { useMonzo } from '../hooks/useMonzo';
 
 export default function HeySaladDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [tokenBalance, setTokenBalance] = useState<string>('0');
-  const [transactions, setTransactions] = useState<any[]>([]);
-
-  // Monzo integration
-  const { 
-    isConnected: isMonzoConnected,
-    error: monzoError
-  } = useMonzo();
+  const [isWalletMinimized, setIsWalletMinimized] = useState(false);
 
   // Check for mobile and handle URL params
   useEffect(() => {
@@ -47,33 +30,16 @@ export default function HeySaladDashboard() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    // Check URL params for tab switching
-    const urlParams = new URLSearchParams(window.location.search);
-    const tab = urlParams.get('tab');
-    if (tab) {
-      setActiveTab(tab);
-    }
-    
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Mock data - replace with real data fetching
-  const getTotalWasteReduction = () => {
-    return transactions.reduce((total, transaction) => {
-      return total + (transaction.wasteAmount || 0);
-    }, 0);
-  };
-
-  // Mock functions for components
-  const handleLogWasteReduction = async (amount: number, type: any, description: string): Promise<void> => {
-    // Implementation for logging waste reduction
-    console.log('Logging waste reduction:', { amount, type, description });
-  };
-
-  const handleConnectWallet = async (): Promise<void> => {
-    // Implementation for connecting wallet
-    console.log('Connecting wallet...');
-  };
+  // Helper function for greeting
+  function getTimeOfDay(): string {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    return 'evening';
+  }
 
   // Main layout styles
   const mainLayoutStyle: React.CSSProperties = {
@@ -101,7 +67,7 @@ export default function HeySaladDashboard() {
     alignItems: 'center',
     marginBottom: '24px',
     padding: '16px 0',
-    borderBottom: '2px solid #ffd0cd'
+    borderBottom: '2px solid #333333'
   };
 
   const hamburgerStyle: React.CSSProperties = {
@@ -140,71 +106,75 @@ export default function HeySaladDashboard() {
     height: isMobile ? '100vh' : 'auto'
   };
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return (
-          <>
-            <DashboardHeader 
-              walletAddress={walletAddress}
-              isMonzoConnected={isMonzoConnected}
-              tokenBalance={tokenBalance}
-              onConnectWallet={handleConnectWallet}
-            />
-            
-            <StatsCards
-              tokenBalance={tokenBalance}
-              getTotalWasteReduction={getTotalWasteReduction}
-            />
-            
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(400px, 1fr))',
-              gap: '24px'
-            }}>
-              <RecentTransactions
-                transactions={transactions}
-                setActiveTab={setActiveTab}
-              />
-              
-              <QuickActions setActiveTab={setActiveTab} />
-            </div>
-          </>
-        );
-        
-      case 'log-waste':
-        return (
-          <TabContainer title="Log Waste Reduction" icon={<Trash2 size={28} />}>
-            <WasteForm 
-              isConnected={!!walletAddress}
-              logWasteReduction={handleLogWasteReduction}
-            />
-          </TabContainer>
-        );
-        
-      case 'history':
-        return (
-          <TabContainer title="Transaction History" icon={<History size={28} />}>
-            <TransactionHistory transactions={transactions} />
-          </TabContainer>
-        );
-        
-      case 'monzo':
-        return (
-          <TabContainer title="Banking Integration" icon={<CreditCard size={28} />}>
-            <MonzoConnection />
-          </TabContainer>
-        );
-        
-      default:
-        return (
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <h2 style={{ color: '#ed4c4c', fontFamily: 'Grandstander, cursive' }}>
-              Tab not found
-            </h2>
-          </div>
-        );
-    }
+  const greetingStyle: React.CSSProperties = {
+    marginBottom: '32px',
+    textAlign: 'center',
+    padding: '32px 24px',
+    background: 'linear-gradient(135deg, rgba(237, 76, 76, 0.1) 0%, rgba(250, 160, 154, 0.05) 100%)',
+    borderRadius: '25px',
+    border: '2px solid rgba(237, 76, 76, 0.2)',
+    boxShadow: '0 8px 24px rgba(237, 76, 76, 0.15)'
+  };
+
+  const greetingTitleStyle: React.CSSProperties = {
+    fontSize: isMobile ? '28px' : '36px',
+    fontWeight: '800',
+    color: '#ffffff',
+    margin: '0 0 12px 0',
+    fontFamily: 'Grandstander, cursive'
+  };
+
+  const greetingSubtitleStyle: React.CSSProperties = {
+    fontSize: isMobile ? '16px' : '18px',
+    color: '#faa09a',
+    margin: '0',
+    fontFamily: 'Figtree, sans-serif'
+  };
+
+  const walletSectionStyle: React.CSSProperties = {
+    marginBottom: '32px',
+    transition: 'all 0.3s ease'
+  };
+
+  const walletHeaderStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '16px',
+    cursor: 'pointer',
+    padding: '12px 16px',
+    background: 'rgba(237, 76, 76, 0.1)',
+    borderRadius: '12px',
+    border: '1px solid rgba(237, 76, 76, 0.3)'
+  };
+
+  const actionButtonsStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+    gap: '24px',
+    maxWidth: '800px',
+    margin: '0 auto'
+  };
+
+  const actionButtonStyle: React.CSSProperties = {
+    background: 'linear-gradient(135deg, #ed4c4c 0%, #faa09a 100%)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '25px',
+    padding: '32px 24px',
+    fontSize: '18px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 8px 24px rgba(237, 76, 76, 0.3)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '16px',
+    fontFamily: 'Grandstander, cursive',
+    textDecoration: 'none',
+    minHeight: '180px',
+    justifyContent: 'center'
   };
 
   return (
@@ -238,348 +208,123 @@ export default function HeySaladDashboard() {
           </button>
           
           <div style={logoMobileStyle}>
-            <div style={{
-              width: '32px',
-              height: '32px',
-              background: '#ed4c4c',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '16px'
-            }}>
-              🥗
-            </div>
-            <span style={{
-              fontSize: '18px',
-              fontWeight: '700',
-              color: '#ed4c4c',
-              fontFamily: 'Grandstander, cursive'
-            }}>
-              HeySalad
-            </span>
+            <img 
+              src="/HeySalad Logo White.png" 
+              alt="HeySalad Logo" 
+              style={{
+                width: '120px',
+                height: '38px',
+                objectFit: 'contain'
+              }}
+            />
           </div>
         </header>
 
-        {/* Tab Content */}
-        {renderTabContent()}
+        {/* Greeting Section */}
+        <div style={greetingStyle}>
+          <h1 style={greetingTitleStyle}>
+            Good {getTimeOfDay()}! ✨
+          </h1>
+          <p style={greetingSubtitleStyle}>
+            Ready to analyze food with AI and earn tokens?
+          </p>
+        </div>
+
+        {/* Wallet Connection Section */}
+        <div style={walletSectionStyle}>
+          <div 
+            style={walletHeaderStyle}
+            onClick={() => setIsWalletMinimized(!isWalletMinimized)}
+          >
+            <span style={{ color: '#ffffff', fontWeight: '600', fontFamily: 'Grandstander, cursive' }}>
+              Wallet Connection
+            </span>
+            {isWalletMinimized ? (
+              <ChevronDown size={20} style={{ color: '#ed4c4c' }} />
+            ) : (
+              <ChevronUp size={20} style={{ color: '#ed4c4c' }} />
+            )}
+          </div>
+          
+          {!isWalletMinimized && (
+            <WalletConnection />
+          )}
+        </div>
+
+        {/* Main Action Buttons */}
+        <div style={actionButtonsStyle}>
+          {/* Image Analysis Button */}
+          <Link 
+            href="/image-analysis" 
+            style={actionButtonStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 12px 32px rgba(237, 76, 76, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(237, 76, 76, 0.3)';
+            }}
+          >
+            <Camera size={48} />
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '20px', marginBottom: '4px' }}>Image Analysis</div>
+              <div style={{ fontSize: '14px', opacity: 0.9, fontFamily: 'Figtree, sans-serif', fontWeight: '400' }}>
+                Analyze food with AI camera
+              </div>
+            </div>
+          </Link>
+
+          {/* Voice Assistant Button */}
+          <Link 
+            href="/voice-assistant" 
+            style={actionButtonStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 12px 32px rgba(237, 76, 76, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(237, 76, 76, 0.3)';
+            }}
+          >
+            <Mic size={48} />
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '20px', marginBottom: '4px' }}>Voice Assistant</div>
+              <div style={{ fontSize: '14px', opacity: 0.9, fontFamily: 'Figtree, sans-serif', fontWeight: '400' }}>
+                Voice-powered food logging
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        {/* Feature Preview */}
+        <div style={{
+          marginTop: '48px',
+          textAlign: 'center',
+          padding: '24px',
+          background: 'rgba(237, 76, 76, 0.05)',
+          borderRadius: '20px',
+          border: '1px solid rgba(237, 76, 76, 0.1)'
+        }}>
+          <Sparkles size={32} style={{ color: '#ed4c4c', marginBottom: '16px' }} />
+          <h3 style={{ 
+            color: '#ffffff', 
+            fontFamily: 'Grandstander, cursive', 
+            marginBottom: '8px',
+            fontSize: '18px' 
+          }}>
+            Coming Soon: Email Rewards
+          </h3>
+          <p style={{ 
+            color: '#faa09a', 
+            fontSize: '14px', 
+            margin: 0 
+          }}>
+            Add your email and earn bonus tokens for joining our community!
+          </p>
+        </div>
       </main>
     </div>
   );
-}
-
-// Dashboard Header Component
-function DashboardHeader({ 
-  walletAddress, 
-  isMonzoConnected,
-  tokenBalance,
-  onConnectWallet
-}: { 
-  walletAddress: string | null; 
-  isMonzoConnected: boolean;
-  tokenBalance: string;
-  onConnectWallet: () => Promise<void>;
-}) {
-  const headerStyle: React.CSSProperties = {
-    marginBottom: '32px',
-    background: '#000000',
-    padding: '24px',
-    borderRadius: '25px',
-    border: '2px solid #333333',
-    boxShadow: '0 4px 12px rgba(237, 76, 76, 0.15)'
-  };
-
-  const titleStyle: React.CSSProperties = {
-    fontSize: '32px',
-    fontWeight: '800',
-    color: '#ffffff',
-    margin: '0 0 8px 0',
-    fontFamily: 'Grandstander, cursive'
-  };
-
-  const subtitleStyle: React.CSSProperties = {
-    fontSize: '16px',
-    color: '#faa09a',
-    margin: '0 0 16px 0',
-    fontFamily: 'Figtree, sans-serif'
-  };
-
-  const statusBarStyle: React.CSSProperties = {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '12px',
-    alignItems: 'center'
-  };
-
-  return (
-    <div style={headerStyle}>
-      <h1 style={titleStyle}>
-        Good {getTimeOfDay()}! 👋
-      </h1>
-      <p style={subtitleStyle}>
-        Ready to make a positive impact on food waste?
-      </p>
-      
-      <div style={statusBarStyle}>
-        <WalletConnectionButton 
-          isConnected={!!walletAddress}
-          isConnecting={false}
-          selectedAccount={null}
-          tokenBalance={tokenBalance}
-          connectWallet={onConnectWallet}
-        />
-        
-        <StatusBadge
-          icon={<CreditCard size={14} />}
-          label="Monzo"
-          status={isMonzoConnected ? 'connected' : 'disconnected'}
-        />
-        
-        <StatusBadge
-          icon={<Globe size={14} />}
-          label="Polkadot"
-          status={walletAddress ? 'connected' : 'disconnected'}
-        />
-      </div>
-    </div>
-  );
-}
-
-// Tab Container Component
-function TabContainer({ 
-  title, 
-  icon, 
-  children 
-}: { 
-  title: string; 
-  icon: React.ReactNode; 
-  children: React.ReactNode;
-}) {
-  const containerStyle: React.CSSProperties = {
-    background: '#000000',
-    borderRadius: '25px',
-    padding: '32px',
-    boxShadow: '0 8px 24px rgba(237, 76, 76, 0.15), 0 4px 8px rgba(237, 76, 76, 0.1)',
-    border: '2px solid #333333'
-  };
-
-  const headerStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    marginBottom: '24px',
-    paddingBottom: '16px',
-    borderBottom: '2px solid #333333'
-  };
-
-  const titleStyle: React.CSSProperties = {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: '#ffffff',
-    margin: 0,
-    fontFamily: 'Grandstander, cursive'
-  };
-
-  return (
-    <div style={containerStyle}>
-      <div style={headerStyle}>
-        <div style={{ color: '#ed4c4c' }}>{icon}</div>
-        <h2 style={titleStyle}>{title}</h2>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-// Quick Actions Component
-function QuickActions({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
-  const containerStyle: React.CSSProperties = {
-    background: '#000000',
-    borderRadius: '25px',
-    padding: '24px',
-    boxShadow: '0 8px 24px rgba(237, 76, 76, 0.15), 0 4px 8px rgba(237, 76, 76, 0.1)',
-    border: '2px solid #333333'
-  };
-
-  const headerStyle: React.CSSProperties = {
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#ffffff',
-    margin: '0 0 16px 0',
-    fontFamily: 'Grandstander, cursive',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
-  };
-
-  const actionsStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px'
-  };
-
-  const actions = [
-    {
-      icon: <Trash2 size={24} />,
-      title: 'Log Waste Reduction',
-      description: 'Record your food waste prevention',
-      action: () => setActiveTab('log-waste'),
-      color: '#28a745'
-    },
-    {
-      icon: <CreditCard size={24} />,
-      title: 'Connect Banking',
-      description: 'Link Monzo for transaction verification',
-      action: () => setActiveTab('monzo'),
-      color: '#ed4c4c'
-    },
-    {
-      icon: <History size={24} />,
-      title: 'View History',
-      description: 'See all your transactions',
-      action: () => setActiveTab('history'),
-      color: '#17a2b8'
-    }
-  ];
-
-  return (
-    <div style={containerStyle}>
-      <h3 style={headerStyle}>
-        <Zap size={20} style={{ color: '#ed4c4c' }} />
-        Quick Actions
-      </h3>
-      
-      <div style={actionsStyle}>
-        {actions.map((action, index) => (
-          <QuickActionButton
-            key={index}
-            icon={action.icon}
-            title={action.title}
-            description={action.description}
-            onClick={action.action}
-            color={action.color}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Quick Action Button Component
-function QuickActionButton({ 
-  icon, 
-  title, 
-  description, 
-  onClick, 
-  color 
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  onClick: () => void;
-  color: string;
-}) {
-  const [isHovered, setIsHovered] = useState(false);
-
-  const buttonStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '16px',
-    background: isHovered ? `${color}22` : '#111111',
-    border: `2px solid ${isHovered ? color : '#333333'}`,
-    borderRadius: '16px',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    textAlign: 'left'
-  };
-
-  const iconStyle: React.CSSProperties = {
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    background: `${color}22`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: color,
-    flexShrink: 0
-  };
-
-  const textStyle: React.CSSProperties = {
-    flex: 1
-  };
-
-  const titleStyle: React.CSSProperties = {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: isHovered ? color : '#ffffff',
-    margin: '0 0 4px 0',
-    fontFamily: 'Figtree, sans-serif'
-  };
-
-  const descriptionStyle: React.CSSProperties = {
-    fontSize: '12px',
-    color: '#faa09a',
-    margin: 0,
-    fontFamily: 'Figtree, sans-serif'
-  };
-
-  return (
-    <button
-      style={buttonStyle}
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div style={iconStyle}>{icon}</div>
-      <div style={textStyle}>
-        <div style={titleStyle}>{title}</div>
-        <div style={descriptionStyle}>{description}</div>
-      </div>
-    </button>
-  );
-}
-
-// Status Badge Component
-function StatusBadge({ 
-  icon, 
-  label, 
-  status 
-}: { 
-  icon: React.ReactNode; 
-  label: string; 
-  status: 'connected' | 'disconnected';
-}) {
-  const badgeStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '8px 12px',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '600',
-    fontFamily: 'Figtree, sans-serif',
-    background: status === 'connected' ? '#28a74522' : '#dc354522',
-    color: status === 'connected' ? '#28a745' : '#dc3545',
-    border: `1px solid ${status === 'connected' ? '#28a745' : '#dc3545'}33`
-  };
-
-  const StatusIcon = status === 'connected' ? CheckCircle : XCircle;
-
-  return (
-    <div style={badgeStyle}>
-      {icon}
-      <span>{label}</span>
-      <StatusIcon size={12} />
-    </div>
-  );
-}
-
-// Helper Functions
-function getTimeOfDay(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'morning';
-  if (hour < 17) return 'afternoon';
-  return 'evening';
 }
