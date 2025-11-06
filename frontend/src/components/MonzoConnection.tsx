@@ -34,40 +34,15 @@ export default function MonzoConnection({ onConnectionStatusChange }: MonzoConne
   const [error, setError] = useState<string | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
 
-  // Check for OAuth callback parameters on component mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const success = urlParams.get('monzo_success');
-    const accessToken = urlParams.get('access_token');
-    const userId = urlParams.get('user_id');
-    const accountIdParam = urlParams.get('account_id');
     const monzoError = urlParams.get('monzo_error');
-
-    if (success === 'true' && accessToken && userId) {
-      const tokenData: MonzoTokens = {
-        access_token: accessToken,
-        user_id: userId,
-        expires_in: 3600 // Default 1 hour
-      };
-      
-      setTokens(tokenData);
-      setAccountId(accountIdParam);
-      setIsConnected(true);
-      setError(null);
-      
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-      
-      // Notify parent component
-      onConnectionStatusChange?.(true, tokenData);
-      
-      // Load analysis
-      if (accountIdParam) {
-        loadSpendingAnalysis(accessToken, accountIdParam);
-      }
-    } else if (monzoError) {
+    if (monzoError) {
       setError(`Connection failed: ${monzoError}`);
       setIsConnecting(false);
+    }
+    if (urlParams.get('monzo_success') === 'true') {
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     // Check if we already have stored tokens

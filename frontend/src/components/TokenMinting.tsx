@@ -1,26 +1,25 @@
 // components/TokenMinting.tsx
+// Updated to use Polkadot Asset-Hub instead of Ethereum
+
 'use client';
 
 import React, { useState } from 'react';
 import { Coins, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { usePolkadotWallet } from '../hooks/usePolkadotWallet';
+import { PolkadotTokenService, type WasteReductionClaim, type WasteType } from '../services/PolkadotTokenService';
 
 interface TokenMintingProps {
   wasteAmount: number; // in grams
-  wasteType: 'donation' | 'efficient-delivery' | 'used-before-expiry';
+  wasteType: WasteType;
+  wasteDescription?: string;
   onMintComplete?: (tokenAmount: number, txHash: string) => void;
   className?: string;
 }
 
-const WASTE_TYPE_MULTIPLIERS = {
-  'donation': 0.15, // 15 tokens per 100g
-  'efficient-delivery': 0.10, // 10 tokens per 100g  
-  'used-before-expiry': 0.12 // 12 tokens per 100g
-};
-
 export default function TokenMinting({ 
   wasteAmount, 
   wasteType, 
+  wasteDescription = '',
   onMintComplete,
   className = '' 
 }: TokenMintingProps) {
@@ -29,11 +28,14 @@ export default function TokenMinting({
   const [mintStatus, setMintStatus] = useState<'idle' | 'minting' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
+  const [tokensEarned, setTokensEarned] = useState<number>(0);
+
+  // Initialize token service
+  const tokenService = new PolkadotTokenService(api);
 
   // Calculate tokens to mint based on waste amount and type
   const calculateTokens = () => {
-    const multiplier = WASTE_TYPE_MULTIPLIERS[wasteType];
-    return Math.floor((wasteAmount / 100) * multiplier * 100) / 100; // Round to 2 decimal places
+    return tokenService.calculateTokenReward(wasteAmount, wasteType) / Math.pow(10, 12); // Convert to human readable
   };
 
   const tokenAmount = calculateTokens();
@@ -55,21 +57,52 @@ export default function TokenMinting({
     setTxHash(null);
 
     try {
-      // For demo purposes, we'll create a simple balance transfer
-      // In production, this would be a call to your custom pallet for minting FWT tokens
+      // Check if FWT asset exists, create if not
+      const assetExists = await tokenService.assetExists();
       
-      // Mock transaction - replace with actual token minting logic
-      const mockMintExtrinsic = api.tx.system.remark(`MINT_FWT:${tokenAmount}:${wasteType}:${wasteAmount}`);
-      
-      // Sign and send transaction
-      const blockHash = await signAndSendTransaction(mockMintExtrinsic);
-      
-      setTxHash(blockHash);
-      setMintStatus('success');
-      
-      // Call completion callback
-      if (onMintComplete) {
-        onMintComplete(tokenAmount, blockHash);
+      if (!assetExists) {
+        setError('FWT asset not found. Creating asset first...');
+        
+        const createResult = await tokenService.createFWTAsset(
+          selectedAccount,
+          signAndSendTransaction
+        );
+        
+        if (!createResult.success) {
+          throw new Error(createResult.error || 'Failed to create FWT asset');
+        }
+        
+        // Wait a bit for asset creation to be processed
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+
+      // Create waste reduction claim
+      const claim: WasteReductionClaim = {
+        amount: wasteAmount,
+        type: wasteType,
+        description: wasteDescription,
+        timestamp: new Date().toISOString(),
+        confidence: 1.0 // Default confidence
+      };
+
+      // Mint tokens
+      const result = await tokenService.mintTokens(
+        claim,
+        selectedAccount,
+        signAndSendTransaction
+      );
+
+      if (result.success) {
+        setTxHash(result.txHash || '');
+        setTokensEarned(result.tokensAmount || 0);
+        setMintStatus('success');
+        
+        // Call completion callback
+        if (onMintComplete && result.txHash) {
+          onMintComplete(result.tokensAmount || 0, result.txHash);
+        }
+      } else {
+        throw new Error(result.error || 'Failed to mint tokens');
       }
 
     } catch (err: any) {
@@ -161,7 +194,7 @@ export default function TokenMinting({
           <h3 style={{ ...titleStyle, color: '#666666' }}>Token Minting</h3>
         </div>
         <p style={{ color: '#666666', textAlign: 'center', margin: 0 }}>
-          Connect your wallet to mint tokens
+          Connect your wallet to mint FWT tokens
         </p>
       </div>
     );
@@ -183,17 +216,22 @@ export default function TokenMinting({
           <div style={{ color: '#ffffff', fontSize: '16px', marginBottom: '4px' }}>
             {wasteAmount}g of {wasteType.replace('-', ' ')}
           </div>
-          <div style={{ color: '#faa09a', fontSize: '12px' }}>
-            Multiplier: {WASTE_TYPE_MULTIPLIERS[wasteType]}x
-          </div>
+          {wasteDescription && (
+            <div style={{ color: '#faa09a', fontSize: '12px', marginTop: '8px' }}>
+              "{wasteDescription.substring(0, 100)}{wasteDescription.length > 100 ? '...' : ''}"
+            </div>
+          )}
         </div>
 
         <div style={{ borderTop: '1px solid rgba(237, 76, 76, 0.3)', paddingTop: '12px' }}>
           <div style={{ color: '#ed4c4c', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
-            Tokens to Mint
+            FWT Tokens to Mint
           </div>
           <div style={{ color: '#ffffff', fontSize: '24px', fontWeight: '700' }}>
-            {tokenAmount} FWT
+            {tokenAmount.toFixed(6)} FWT
+          </div>
+          <div style={{ color: '#faa09a', fontSize: '12px', marginTop: '4px' }}>
+            On Polkadot Asset-Hub (Asset ID: 2024)
           </div>
         </div>
       </div>
@@ -203,10 +241,10 @@ export default function TokenMinting({
         <div style={successBoxStyle}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <CheckCircle size={16} style={{ color: '#28a745' }} />
-            <span style={{ color: '#28a745', fontWeight: '600' }}>Tokens Minted Successfully!</span>
+            <span style={{ color: '#28a745', fontWeight: '600' }}>FWT Tokens Minted Successfully!</span>
           </div>
           <div style={{ color: '#28a745', fontSize: '14px', marginBottom: '8px' }}>
-            {tokenAmount} FWT tokens have been minted to your account.
+            {tokensEarned.toFixed(6)} FWT tokens have been minted to your Polkadot wallet.
           </div>
           {txHash && (
             <div style={{ color: '#28a745', fontSize: '12px', fontFamily: 'monospace' }}>
@@ -260,7 +298,7 @@ export default function TokenMinting({
         ) : (
           <>
             <Coins size={16} />
-            Mint {tokenAmount} FWT Tokens
+            Mint {tokenAmount.toFixed(6)} FWT
           </>
         )}
       </button>
@@ -268,9 +306,16 @@ export default function TokenMinting({
       {/* Additional Info */}
       <div style={{ marginTop: '16px', textAlign: 'center' }}>
         <p style={{ color: '#666666', fontSize: '12px', margin: 0 }}>
-          Tokens will be added to your wallet balance after confirmation
+          Tokens will be added to your wallet balance after block confirmation
         </p>
       </div>
+
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

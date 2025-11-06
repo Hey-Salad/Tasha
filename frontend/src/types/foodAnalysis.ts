@@ -33,3 +33,28 @@ export interface MintingOptions {
   waste_reduction_data: boolean;
   environmental_impact: boolean;
 }
+
+export interface VoiceSessionConfig {
+  voice_id?: string;
+  language?: string;
+  response_format?: 'mp3' | 'wav';
+  stability?: number;
+  similarity_boost?: number;
+}
+
+export interface FoodVoiceAnalysis {
+  food_items: string[];
+  waste_reduction_actions: string[];
+  sustainability_insights: string[];
+  recipe_suggestions: string[];
+  confidence_score: number;
+  conversation_summary: string;
+}
+
+export interface VoiceConversation {
+  id: string;
+  transcript: string;
+  analysis: FoodVoiceAnalysis;
+  audioUrl?: string;
+  timestamp: string;
+}

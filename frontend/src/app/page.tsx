@@ -5,6 +5,7 @@ import { Camera, Mic, ChevronDown, ChevronUp, Wallet, Copy, Menu, X } from 'luci
 import { usePolkadotWallet } from '../hooks/usePolkadotWallet';
 import { useRouter } from 'next/navigation';
 import Sidebar from '../components/Sidebar';
+import ManualTokenMinting from '../components/ManualTokenMinting';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -509,6 +510,10 @@ export default function DashboardPage() {
               <h3 style={actionTitleStyle}>Voice Assistant</h3>
               <p style={actionDescStyle}>Voice-powered food logging</p>
             </button>
+          </div>
+
+          <div style={{ marginTop: isMobile ? '8px' : '12px' }}>
+            <ManualTokenMinting />
           </div>
 
           {/* Simple Grant Text */}

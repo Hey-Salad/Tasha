@@ -330,6 +330,37 @@ git checkout -b feature/amazing-feature
 # Open Pull Request
 ```
 
+### Firebase Functions
+```bash
+# Install Function dependencies
+cd frontend/functions
+npm install
+
+# Build locally
+npm run build
+
+# Configure secrets (example)
+firebase functions:config:set \
+  monzo.client_id="..." monzo.client_secret="..." monzo.redirect_uri="https://tasha.heysalad.app/auth/monzo" \
+  gemini.api_key="..." \
+  elevenlabs.api_key="..." elevenlabs.agent_id="..."
+
+# Deploy API
+firebase deploy --only functions
+```
+
+### Testing
+```bash
+# Unit tests
+npm test
+
+# Integration tests
+npm run test:integration
+
+# Placeholder E2E entry point (replace with Playwright in CI)
+npm run test:e2e
+```
+
 ---
 
 ## 📄 License

@@ -10,6 +10,8 @@
 !.yarn/releases
 !.yarn/versions
 /frontend/node_modules
+/frontend/functions/node_modules
+/frontend/functions/lib
 /backend/node_modules
 
 # testing
