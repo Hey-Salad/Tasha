@@ -35,29 +35,6 @@ export default function VoiceAssistantPage() {
     console.log(`[${timestamp}] [${type}]`, message);
   };
 
-  const speakText = async (text: string) => {
-    try {
-      const response = await fetch('/api/elevenlabs/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: text,
-          voiceId: 'pNInz6obpgDQGcFmaJgB'
-        })
-      });
-
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        await audio.play();
-        audio.onended = () => URL.revokeObjectURL(audioUrl);
-      }
-    } catch (err) {
-      console.error('TTS error:', err);
-    }
-  };
-
   const conversation = useConversation({
     onConnect: () => {
       debugLog('Agent', 'Connected and listening');
@@ -84,11 +61,6 @@ export default function VoiceAssistantPage() {
 
       // Process message for waste detection and minting
       processMessage(message.message, newMessage.source);
-
-      // Speak agent messages
-      if (message.source === 'agent' || message.source === 'ai') {
-        speakText(message.message);
-      }
     },
     onError: (error: Error) => {
       debugLog('Error', error);
