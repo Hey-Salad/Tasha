@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { buildFunctionsUrl, parseJsonResponse } from '@/utils/functionsClient';
 
 export default function MonzoAuthCallback() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function MonzoAuthCallback() {
 
     const exchangeCode = async () => {
       try {
-        const response = await fetch('/api/monzo/auth', {
+        const response = await fetch(buildFunctionsUrl('/monzo/auth'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -30,8 +31,10 @@ export default function MonzoAuthCallback() {
           body: JSON.stringify({ code, state })
         });
 
-        const data = await response.json();
-        if (!response.ok || !data.success) {
+        const data = await parseJsonResponse<{ success: boolean; tokens: any; accounts?: any[]; error?: string }>(
+          response
+        );
+        if (!data.success) {
           throw new Error(data.error || 'Token exchange failed');
         }
 

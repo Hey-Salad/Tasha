@@ -1,247 +1,134 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  ArrowLeft, 
-  Loader, 
-  Sparkles, 
-  RotateCcw, 
-  Lock, 
-  Mic, 
-  MicOff, 
-  Play, 
-  Pause, 
-  Square, 
-  Trash2, 
-  Send,
-  Volume2,
-  AlertCircle
-} from 'lucide-react';
+import { ArrowLeft, Mic, Waves, AlertCircle, Square, Coins, CheckCircle } from 'lucide-react';
+import { useConversation } from '@11labs/react';
 import { usePolkadotWallet } from '../../hooks/usePolkadotWallet';
-import { elevenLabsService, type VoiceConversation } from '../../services/ElevenLabsService';
+import { useVoiceWasteMinting } from '../../hooks/useVoiceWasteMinting';
 
-interface VoiceSession {
-  id: string;
-  conversations: VoiceConversation[];
-  startTime: string;
-  isActive: boolean;
-}
+type ConversationMessage = {
+  message: string;
+  source: string;
+};
+
+type TranscriptMessage = {
+  text: string;
+  source: 'user' | 'agent';
+  timestamp: number;
+};
 
 export default function VoiceAssistantPage() {
-  const { isConnected, signMessage } = usePolkadotWallet();
-  
-  // Audio recording state
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  
-  // Conversation state
-  const [currentSession, setCurrentSession] = useState<VoiceSession | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Audio elements and media recorder
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  const { assetHubApi, selectedAccount, signAndSendTransaction } = usePolkadotWallet();
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [transcript, setTranscript] = useState<TranscriptMessage[]>([]);
 
-  // Check if user is authenticated on mount
+  const { mintingStatus, processMessage, clearMintingStatus } = useVoiceWasteMinting(
+    assetHubApi,
+    selectedAccount,
+    signAndSendTransaction
+  );
+
+  const debugLog = (type: string, message: unknown): void => {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] [${type}]`, message);
+  };
+
+  const speakText = async (text: string) => {
+    try {
+      const response = await fetch('/api/elevenlabs/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: text,
+          voiceId: 'pNInz6obpgDQGcFmaJgB'
+        })
+      });
+
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        await audio.play();
+        audio.onended = () => URL.revokeObjectURL(audioUrl);
+      }
+    } catch (err) {
+      console.error('TTS error:', err);
+    }
+  };
+
+  const conversation = useConversation({
+    onConnect: () => {
+      debugLog('Agent', 'Connected and listening');
+      setIsListening(true);
+      setError("");
+    },
+    onDisconnect: () => {
+      debugLog('Agent', 'Disconnected');
+      setIsListening(false);
+    },
+    onMessage: (message: ConversationMessage) => {
+      debugLog('Message', {
+        content: message.message,
+        source: message.source
+      });
+
+      const newMessage: TranscriptMessage = {
+        text: message.message,
+        source: message.source === 'user' ? 'user' : 'agent',
+        timestamp: Date.now()
+      };
+
+      setTranscript(prev => [...prev, newMessage]);
+
+      // Process message for waste detection and minting
+      processMessage(message.message, newMessage.source);
+
+      // Speak agent messages
+      if (message.source === 'agent' || message.source === 'ai') {
+        speakText(message.message);
+      }
+    },
+    onError: (error: Error) => {
+      debugLog('Error', error);
+      setIsListening(false);
+      setError("Sorry, I encountered an error. Please try again.");
+    }
+  });
+
+  // Add welcome message on mount (client-side only to avoid hydration issues)
   useEffect(() => {
-    if (isConnected) {
-      // For demo purposes, auto-authenticate when wallet is connected
-      // In production, you might want to require explicit authentication
-      setIsAuthenticated(true);
-    }
-  }, [isConnected]);
+    setTranscript([{
+      text: "Hey! I'm Tasha, your food waste reduction assistant. Tell me about any food you've thrown away, or ask me for tips on keeping food fresh!",
+      source: 'agent',
+      timestamp: Date.now()
+    }]);
+  }, []);
 
-  const handleReset = () => {
-    setAudioBlob(null);
-    setAudioUrl(null);
-    setIsPlaying(false);
-    setIsPaused(false);
-    setRecordingTime(0);
-    setError(null);
-    setCurrentSession(null);
-    
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+  useEffect(() => {
+    const conversationContainer = document.querySelector('.conversation-container');
+    if (conversationContainer) {
+      conversationContainer.scrollTop = conversationContainer.scrollHeight;
     }
-  };
+  }, [transcript]);
 
-  const handleAuthenticate = async () => {
-    if (!isConnected) {
-      alert('Please connect your wallet first');
-      return;
-    }
+  const handleMicClick = async (): Promise<void> => {
+    debugLog('Action', isListening ? 'Stopping conversation' : 'Starting conversation');
 
     try {
-      setIsProcessing(true);
-      const message = `Authenticate Voice Assistant Access\nTimestamp: ${Date.now()}`;
-      
-      await signMessage(message);
-      setIsAuthenticated(true);
-      setError(null);
-      
-      // Start a new voice session
-      const sessionId = await elevenLabsService.startVoiceSession({
-        voice_id: 'pNInz6obpgDQGcFmaJgB', // Tasha voice
-        language: 'en'
-      });
-      
-      const newSession: VoiceSession = {
-        id: sessionId,
-        conversations: [],
-        startTime: new Date().toISOString(),
-        isActive: true
-      };
-      
-      setCurrentSession(newSession);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Authentication failed');
-      alert('Authentication failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Start recording audio
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100
-        }
-      });
-
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        setAudioBlob(audioBlob);
-        setAudioUrl(URL.createObjectURL(audioBlob));
-        
-        // Stop all tracks to release microphone
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start(100); // Collect data every 100ms
-      setIsRecording(true);
-      setRecordingTime(0);
-      
-      // Start timer
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-
-    } catch (error) {
-      setError('Failed to access microphone. Please check permissions.');
-      console.error('Recording error:', error);
-    }
-  };
-
-  // Stop recording audio
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-      }
-    }
-  };
-
-  // Play recorded audio
-  const playAudio = () => {
-    if (audioUrl && audioRef.current) {
-      if (isPaused) {
-        audioRef.current.play();
-        setIsPaused(false);
+      if (isListening) {
+        await conversation.endSession();
       } else {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play();
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        await conversation.startSession({
+          agentId: 'Nnwf6EF9RgYOj6c1a9VU'
+        });
       }
-      setIsPlaying(true);
+    } catch (err) {
+      debugLog('Error', err);
+      setError("Could not access microphone. Please check permissions.");
     }
-  };
-
-  // Pause audio playback
-  const pauseAudio = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-      setIsPaused(true);
-    }
-  };
-
-  // Clear current recording
-  const clearRecording = () => {
-    setAudioBlob(null);
-    setAudioUrl(null);
-    setIsPlaying(false);
-    setIsPaused(false);
-    setRecordingTime(0);
-    
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-  };
-
-  // Send audio to voice assistant
-  const sendAudioToAssistant = async () => {
-    if (!audioBlob || !currentSession) return;
-
-    try {
-      setIsProcessing(true);
-      setError(null);
-
-      const conversation = await elevenLabsService.sendVoiceInput(
-        currentSession.id,
-        audioBlob
-      );
-
-      // Update session with new conversation
-      setCurrentSession(prev => prev ? {
-        ...prev,
-        conversations: [...prev.conversations, conversation]
-      } : null);
-
-      // Clear the current recording
-      clearRecording();
-
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to process audio');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Format recording time
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const containerStyle: React.CSSProperties = {
@@ -265,568 +152,377 @@ export default function VoiceAssistantPage() {
     borderRadius: '12px',
     padding: '12px',
     cursor: 'pointer',
-    transition: 'all 0.3s ease',
     boxShadow: '0 4px 12px rgba(237, 76, 76, 0.3)',
     display: 'flex',
     alignItems: 'center',
     textDecoration: 'none'
   };
 
-  const titleStyle: React.CSSProperties = {
-    fontSize: '24px',
-    fontWeight: '800',
-    color: '#ffffff',
-    margin: 0,
-    fontFamily: 'Grandstander, cursive'
-  };
-
-  const subtitleStyle: React.CSSProperties = {
-    fontSize: '14px',
-    color: '#faa09a',
-    margin: 0
-  };
-
   const mainContentStyle: React.CSSProperties = {
-    maxWidth: '480px',
+    maxWidth: '1200px',
     margin: '0 auto',
-    padding: '0 16px'
+    padding: '24px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '24px'
   };
 
   const cardStyle: React.CSSProperties = {
     borderRadius: '25px',
     background: '#111111',
     boxShadow: '0 8px 24px rgba(237, 76, 76, 0.15)',
-    overflow: 'hidden',
-    border: '2px solid #333333'
+    border: '2px solid #333333',
+    padding: '24px'
   };
-
-  const authSectionStyle: React.CSSProperties = {
-    padding: '40px 24px',
-    textAlign: 'center',
-    background: '#111111'
-  };
-
-  const authButtonStyle: React.CSSProperties = {
-    background: 'linear-gradient(135deg, #ed4c4c 0%, #faa09a 100%)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '25px',
-    padding: '16px 32px',
-    fontSize: '16px',
-    fontWeight: '700',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    boxShadow: '0 4px 12px rgba(237, 76, 76, 0.3)',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    margin: '0 auto',
-    fontFamily: 'Grandstander, cursive'
-  };
-
-  // Authentication required screen
-  if (!isAuthenticated) {
-    return (
-      <div style={containerStyle}>
-        <header style={headerStyle}>
-          <Link href="/" style={backButtonStyle}>
-            <ArrowLeft size={20} />
-          </Link>
-          <div>
-            <h1 style={titleStyle}>Voice Assistant</h1>
-            <p style={subtitleStyle}>AI-powered voice analysis</p>
-          </div>
-        </header>
-
-        <div style={{ padding: '24px' }}>
-          <div style={mainContentStyle}>
-            <div style={cardStyle}>
-              <div style={authSectionStyle}>
-                <Lock size={48} style={{ color: '#ed4c4c', marginBottom: '24px' }} />
-                <h2 style={{
-                  fontSize: '20px',
-                  fontWeight: '700',
-                  color: '#ffffff',
-                  marginBottom: '12px',
-                  fontFamily: 'Grandstander, cursive'
-                }}>
-                  Authentication Required
-                </h2>
-                <p style={{
-                  color: '#faa09a',
-                  marginBottom: '24px',
-                  lineHeight: '1.5'
-                }}>
-                  Sign a message with your wallet to authenticate and access voice assistant features.
-                </p>
-                
-                {!isConnected ? (
-                  <p style={{
-                    color: '#dc3545',
-                    marginBottom: '24px',
-                    fontSize: '14px'
-                  }}>
-                    Please connect your wallet first from the dashboard.
-                  </p>
-                ) : (
-                  <button
-                    style={authButtonStyle}
-                    onClick={handleAuthenticate}
-                    disabled={isProcessing}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(237, 76, 76, 0.4)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(237, 76, 76, 0.3)';
-                    }}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                        Authenticating...
-                      </>
-                    ) : (
-                      <>
-                        <Lock size={16} />
-                        Sign to Authenticate
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={containerStyle}>
-      {/* Hidden audio element for playback */}
-      {audioUrl && (
-        <audio
-          ref={audioRef}
-          src={audioUrl}
-          onEnded={() => setIsPlaying(false)}
-          onPause={() => setIsPlaying(false)}
-          onPlay={() => setIsPlaying(true)}
-        />
-      )}
-
       <header style={headerStyle}>
         <Link href="/" style={backButtonStyle}>
           <ArrowLeft size={20} />
         </Link>
         <div>
-          <h1 style={titleStyle}>Voice Assistant</h1>
-          <p style={subtitleStyle}>AI-powered voice analysis</p>
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: '800',
+            color: '#ffffff',
+            margin: 0,
+            fontFamily: 'Grandstander, cursive'
+          }}>
+            Voice Assistant - Tasha
+          </h1>
+          <p style={{ fontSize: '14px', color: '#faa09a', margin: 0 }}>
+            Real-time conversational AI for food waste tracking
+          </p>
         </div>
-        {currentSession && (
-          <button
-            style={{
-              ...backButtonStyle,
-              marginLeft: 'auto'
-            }}
-            onClick={handleReset}
-            title="Reset Session"
-          >
-            <RotateCcw size={20} />
-          </button>
-        )}
       </header>
 
-      <div style={{ padding: '24px' }}>
-        <div style={mainContentStyle}>
-          {/* HeySalad Logo in Center */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            marginBottom: '24px'
-          }}>
-            <img 
-              src="/HeySalad Logo White.png" 
-              alt="HeySalad Logo" 
-              style={{
-                width: '120px',
-                height: '38px',
-                objectFit: 'contain',
-                opacity: 0.3
-              }}
-            />
-          </div>
+      <div style={mainContentStyle}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          {/* Control Panel */}
           <div style={cardStyle}>
-            {/* Voice Interface */}
-            <div style={{ 
-              width: '100%', 
-              aspectRatio: '4/5', 
-              background: '#000000', 
-              position: 'relative',
+            <div style={{
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
-              padding: '24px'
+              justifyContent: 'space-between',
+              marginBottom: '24px'
             }}>
-              {/* Recording Button */}
-              <div style={{ 
-                position: 'relative',
-                marginBottom: '32px'
-              }}>
-                <button
-                  onClick={isRecording ? stopRecording : startRecording}
-                  disabled={isProcessing}
-                  style={{
-                    width: '120px',
-                    height: '120px',
-                    borderRadius: '50%',
-                    border: 'none',
-                    background: isRecording 
-                      ? 'linear-gradient(135deg, #dc3545 0%, #e74c3c 100%)' 
-                      : 'linear-gradient(135deg, #ed4c4c 0%, #faa09a 100%)',
-                    color: 'white',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: isRecording 
-                      ? '0 8px 24px rgba(220, 53, 69, 0.4)' 
-                      : '0 8px 24px rgba(237, 76, 76, 0.3)',
-                    transform: isRecording ? 'scale(1.1)' : 'scale(1)'
-                  }}
-                >
-                  {isRecording ? <Square size={40} /> : <Mic size={40} />}
-                </button>
-                
-                {isRecording && (
-                  <div style={{
-                    position: 'absolute',
-                    inset: '-8px',
-                    borderRadius: '50%',
-                    border: '3px solid #dc3545',
-                    animation: 'pulse 2s infinite'
-                  }}></div>
-                )}
-              </div>
-
-              {/* Recording Status */}
-              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                {isRecording ? (
-                  <div>
-                    <p style={{ 
-                      fontSize: '18px', 
-                      fontWeight: '600', 
-                      color: '#dc3545', 
-                      margin: '0 0 8px 0' 
-                    }}>
-                      Recording...
-                    </p>
-                    <p style={{ 
-                      fontSize: '16px', 
-                      color: '#faa09a', 
-                      margin: 0 
-                    }}>
-                      {formatTime(recordingTime)}
-                    </p>
-                  </div>
-                ) : audioBlob ? (
-                  <div>
-                    <p style={{ 
-                      fontSize: '18px', 
-                      fontWeight: '600', 
-                      color: '#28a745', 
-                      margin: '0 0 8px 0' 
-                    }}>
-                      Recording Ready
-                    </p>
-                    <p style={{ 
-                      fontSize: '14px', 
-                      color: '#faa09a', 
-                      margin: 0 
-                    }}>
-                      Tap play to review or send to analyze
-                    </p>
-                  </div>
+              <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>
+                Voice Control
+              </h2>
+              <button
+                onClick={handleMicClick}
+                style={{
+                  padding: '16px',
+                  borderRadius: '50%',
+                  background: isListening
+                    ? 'linear-gradient(135deg, #ed4c4c 0%, #faa09a 100%)'
+                    : '#222222',
+                  border: isListening ? 'none' : '2px solid #444444',
+                  cursor: 'pointer',
+                  boxShadow: isListening ? '0 4px 16px rgba(237, 76, 76, 0.5)' : 'none',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                {isListening ? (
+                  <Square size={28} color="#ffffff" />
                 ) : (
-                  <div>
-                    <p style={{ 
-                      fontSize: '18px', 
-                      fontWeight: '600', 
-                      color: '#ffffff', 
-                      margin: '0 0 8px 0' 
-                    }}>
-                      Ready to Record
-                    </p>
-                    <p style={{ 
-                      fontSize: '14px', 
-                      color: '#faa09a', 
-                      margin: 0 
-                    }}>
-                      Tap microphone to start voice recording
-                    </p>
-                  </div>
+                  <Mic size={28} color="#666666" />
                 )}
-              </div>
+              </button>
+            </div>
 
-              {/* Audio Controls */}
-              {audioBlob && (
+            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+              <div style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: isListening ? '#28a745' : '#666666',
+                boxShadow: isListening ? '0 0 12px rgba(40, 167, 69, 0.6)' : 'none',
+                margin: '0 auto 16px',
+                animation: isListening ? 'pulse 2s infinite' : 'none'
+              }} />
+              <p style={{ color: '#cccccc', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+                {isListening ? 'LISTENING' : 'READY'}
+              </p>
+              <p style={{ color: '#888888', fontSize: '14px', lineHeight: 1.6 }}>
+                {isListening
+                  ? "I'm listening... Speak naturally about your food items!"
+                  : "Click the microphone button to start talking to Tasha"}
+              </p>
+            </div>
+
+            {error && (
+              <div style={{
+                padding: '16px',
+                background: 'rgba(220, 53, 69, 0.1)',
+                border: '1px solid rgba(220, 53, 69, 0.3)',
+                borderRadius: '12px',
+                color: '#dc3545',
+                marginTop: '16px'
+              }}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '16px',
-                  marginBottom: '24px'
+                  gap: '8px',
+                  marginBottom: '4px',
+                  fontWeight: 600
                 }}>
-                  <button
-                    onClick={isPlaying ? pauseAudio : playAudio}
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      border: 'none',
-                      background: '#333333',
-                      color: 'white',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-                  </button>
-                  
-                  <button
-                    onClick={clearRecording}
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '50%',
-                      border: 'none',
-                      background: '#666666',
-                      color: 'white',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    <Trash2 size={20} />
-                  </button>
+                  <AlertCircle size={16} />
+                  Error
                 </div>
-              )}
+                <p style={{ fontSize: '13px', margin: 0 }}>{error}</p>
+              </div>
+            )}
+          </div>
 
-              {/* Send Button */}
-              {audioBlob && (
-                <button
-                  onClick={sendAudioToAssistant}
-                  disabled={isProcessing}
+          {/* Transcript Panel */}
+          <div style={cardStyle}>
+            <h2 style={{
+              fontSize: '20px',
+              fontWeight: 'bold',
+              color: '#ffffff',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <Waves size={20} style={{ color: '#faa09a' }} />
+              Live Transcript
+            </h2>
+            <div
+              className="conversation-container"
+              style={{
+                maxHeight: '500px',
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                paddingRight: '8px'
+              }}
+            >
+              {transcript.map((message, index) => (
+                <div
+                  key={index}
                   style={{
-                    background: 'linear-gradient(135deg, #ed4c4c 0%, #faa09a 100%)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '25px',
-                    padding: '12px 24px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
+                    alignSelf: message.source === 'user' ? 'flex-end' : 'flex-start',
+                    background: message.source === 'user'
+                      ? 'linear-gradient(135deg, rgba(237, 76, 76, 0.15) 0%, rgba(250, 160, 154, 0.15) 100%)'
+                      : 'rgba(255, 255, 255, 0.05)',
+                    border: message.source === 'user'
+                      ? '1px solid rgba(237, 76, 76, 0.3)'
+                      : '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '16px',
+                    padding: '14px 18px',
+                    maxWidth: '80%'
+                  }}
+                >
+                  <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    boxShadow: '0 4px 12px rgba(237, 76, 76, 0.3)',
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Send size={16} />
-                      Send to Tasha
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div style={{
-                padding: '20px',
-                background: 'rgba(220, 53, 69, 0.1)',
-                border: '1px solid rgba(220, 53, 69, 0.3)',
-                margin: '16px',
-                borderRadius: '12px'
-              }}>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '8px',
-                  color: '#dc3545', 
-                  marginBottom: '8px', 
-                  fontWeight: '600' 
-                }}>
-                  <AlertCircle size={16} />
-                  Processing Error
-                </div>
-                <div style={{ color: '#dc3545', fontSize: '14px', marginBottom: '12px' }}>
-                  {error}
-                </div>
-                <button 
-                  style={{
-                    background: 'transparent',
-                    border: '1px solid #dc3545',
-                    color: '#dc3545',
-                    borderRadius: '8px',
-                    padding: '8px 16px',
-                    fontSize: '12px',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => setError(null)}
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
-
-            {/* Conversation History */}
-            {currentSession && currentSession.conversations.length > 0 && (
-              <div style={{ padding: '20px' }}>
-                <h3 style={{
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#ffffff',
-                  marginBottom: '16px'
-                }}>
-                  Conversation History
-                </h3>
-                
-                {currentSession.conversations.map((conversation, index) => (
-                  <div key={index} style={{
-                    background: '#1a1a1a',
-                    borderRadius: '12px',
-                    padding: '16px',
-                    marginBottom: '12px',
-                    border: '1px solid #333333'
+                    marginBottom: '6px'
                   }}>
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '8px'
+                    <span style={{
+                      fontSize: '11px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      color: message.source === 'user' ? '#faa09a' : '#888888',
+                      fontWeight: 600
                     }}>
-                      <span style={{
-                        fontSize: '12px',
-                        color: '#faa09a'
-                      }}>
-                        {new Date(conversation.timestamp).toLocaleTimeString()}
-                      </span>
-                      <span style={{
-                        fontSize: '11px',
-                        background: '#333333',
-                        padding: '2px 8px',
-                        borderRadius: '8px',
-                        color: '#faa09a'
-                      }}>
-                        {(conversation.analysis.confidence_score * 100).toFixed(0)}% confidence
-                      </span>
-                    </div>
-                    
-                    {conversation.transcript && (
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#ffffff',
-                        marginBottom: '8px',
-                        lineHeight: '1.4'
-                      }}>
-                        "{conversation.transcript}"
-                      </p>
-                    )}
-                    
-                    {conversation.analysis.food_items.length > 0 && (
-                      <div style={{ marginBottom: '4px' }}>
-                        <span style={{ fontSize: '12px', color: '#faa09a' }}>Foods: </span>
-                        <span style={{ fontSize: '13px', color: '#ffffff' }}>
-                          {conversation.analysis.food_items.join(', ')}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {conversation.analysis.waste_reduction_actions.length > 0 && (
-                      <div style={{ marginBottom: '4px' }}>
-                        <span style={{ fontSize: '12px', color: '#28a745' }}>Actions: </span>
-                        <span style={{ fontSize: '13px', color: '#ffffff' }}>
-                          {conversation.analysis.waste_reduction_actions.slice(0, 2).join(', ')}
-                        </span>
-                      </div>
-                    )}
-
-                    {conversation.audioUrl && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        marginTop: '8px'
-                      }}>
-                        <Volume2 size={14} style={{ color: '#faa09a' }} />
-                        <span style={{ fontSize: '11px', color: '#faa09a' }}>
-                          Response available
-                        </span>
-                      </div>
-                    )}
+                      {message.source === 'user' ? 'You' : 'Tasha'}
+                    </span>
+                    <span style={{ fontSize: '10px', color: '#555555' }}>
+                      {new Date(message.timestamp).toLocaleTimeString()}
+                    </span>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* Tips Section */}
-            <div style={{
-              margin: '16px',
-              background: 'rgba(237, 76, 76, 0.05)',
-              borderRadius: '12px',
-              padding: '16px',
-              border: '1px solid rgba(237, 76, 76, 0.1)'
-            }}>
-              <h4 style={{
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#faa09a',
-                marginBottom: '8px'
-              }}>
-                💡 Voice Assistant Tips
-              </h4>
-              <ul style={{
-                fontSize: '12px',
-                color: '#cccccc',
-                margin: 0,
-                paddingLeft: '16px',
-                lineHeight: '1.4'
-              }}>
-                <li>Describe your food waste reduction activities</li>
-                <li>Ask for recipe suggestions from leftovers</li>
-                <li>Share your sustainability goals</li>
-                <li>Request cooking tips to prevent waste</li>
-              </ul>
+                  <p style={{
+                    color: '#ffffff',
+                    fontSize: '14px',
+                    margin: 0,
+                    lineHeight: 1.5
+                  }}>
+                    {message.text}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
+
+        {/* Tips Card */}
+        <div style={{ ...cardStyle, background: '#0b0b0b' }}>
+          <h3 style={{
+            color: '#ffffff',
+            fontSize: '16px',
+            marginBottom: '16px',
+            fontWeight: 600
+          }}>
+            💡 Tips for Best Results
+          </h3>
+          <ul style={{
+            color: '#cccccc',
+            fontSize: '14px',
+            margin: 0,
+            paddingLeft: '20px',
+            lineHeight: 1.8
+          }}>
+            <li>Speak clearly and naturally about your food items</li>
+            <li>Mention quantities, expiry dates, and item conditions</li>
+            <li>Ask for recipe ideas or sustainability tips</li>
+            <li>Keep your microphone unmuted while the assistant is listening</li>
+          </ul>
+        </div>
       </div>
 
+      {/* Minting Status */}
+      {mintingStatus.isMinting && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          background: 'linear-gradient(135deg, #ed4c4c 0%, #faa09a 100%)',
+          color: 'white',
+          padding: '16px 24px',
+          borderRadius: '16px',
+          boxShadow: '0 8px 24px rgba(237, 76, 76, 0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          zIndex: 1000,
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          <div style={{
+            animation: 'spin 1s linear infinite'
+          }}>
+            <Coins size={24} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: '4px' }}>
+              Minting Tokens...
+            </div>
+            <div style={{ fontSize: '12px', opacity: 0.9 }}>
+              {mintingStatus.wasteItem?.itemName} ({mintingStatus.wasteItem?.weightGrams}g)
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Minting Success */}
+      {!mintingStatus.isMinting && mintingStatus.tokensMinted > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          background: 'linear-gradient(135deg, #28a745 0%, #34d058 100%)',
+          color: 'white',
+          padding: '20px 28px',
+          borderRadius: '16px',
+          boxShadow: '0 8px 24px rgba(40, 167, 69, 0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          zIndex: 1000,
+          animation: 'slideIn 0.3s ease-out',
+          cursor: 'pointer'
+        }}
+        onClick={clearMintingStatus}
+        >
+          <CheckCircle size={32} />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '18px', marginBottom: '4px' }}>
+              +{mintingStatus.tokensMinted} Tokens Minted!
+            </div>
+            <div style={{ fontSize: '13px', opacity: 0.9 }}>
+              {mintingStatus.wasteItem?.itemName} logged successfully
+            </div>
+            <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px' }}>
+              Click to dismiss
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Minting Error */}
+      {mintingStatus.error && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          background: '#dc3545',
+          color: 'white',
+          padding: '16px 24px',
+          borderRadius: '16px',
+          boxShadow: '0 8px 24px rgba(220, 53, 69, 0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          zIndex: 1000,
+          animation: 'slideIn 0.3s ease-out',
+          cursor: 'pointer'
+        }}
+        onClick={clearMintingStatus}
+        >
+          <AlertCircle size={24} />
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: '4px' }}>
+              Minting Failed
+            </div>
+            <div style={{ fontSize: '12px', opacity: 0.9 }}>
+              {mintingStatus.error}
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
         @keyframes pulse {
-          0% { opacity: 1; }
-          50% { opacity: 0.5; }
-          100% { opacity: 1; }
+          0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+          }
+        }
+
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes slideIn {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        .conversation-container::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .conversation-container::-webkit-scrollbar-track {
+          background: #1a1a1a;
+          border-radius: 3px;
+        }
+
+        .conversation-container::-webkit-scrollbar-thumb {
+          background: #333333;
+          border-radius: 3px;
+        }
+
+        .conversation-container::-webkit-scrollbar-thumb:hover {
+          background: #444444;
         }
       `}</style>
     </div>

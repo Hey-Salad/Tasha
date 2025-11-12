@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { buildFunctionsUrl, parseJsonResponse } from '../utils/functionsClient';
 
 interface MonzoTokens {
   access_token: string;
@@ -74,16 +75,24 @@ export function useMonzo() {
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/monzo/transactions?access_token=${tokens.access_token}&account_id=${accountId}&type=food&days=${days}`
-      );
-      
-      const data = await response.json();
-      
+      const params = new URLSearchParams({
+        access_token: tokens.access_token,
+        account_id: accountId,
+        type: 'food',
+        days: String(days)
+      });
+
+      const response = await fetch(`${buildFunctionsUrl('/monzo/transactions')}?${params.toString()}`);
+      const data = await parseJsonResponse<{
+        success: boolean;
+        transactions: MonzoTransaction[];
+        error?: string;
+      }>(response);
+
       if (!data.success) {
         throw new Error(data.error || 'Failed to fetch transactions');
       }
-      
+
       return data.transactions;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch transactions';
@@ -105,16 +114,20 @@ export function useMonzo() {
     setError(null);
 
     try {
-      const response = await fetch(
-        `/api/monzo/transactions?access_token=${tokens.access_token}&account_id=${accountId}&type=analysis&days=${days}`
-      );
-      
-      const data = await response.json();
-      
+      const params = new URLSearchParams({
+        access_token: tokens.access_token,
+        account_id: accountId,
+        type: 'analysis',
+        days: String(days)
+      });
+
+      const response = await fetch(`${buildFunctionsUrl('/monzo/transactions')}?${params.toString()}`);
+      const data = await parseJsonResponse<{ success: boolean; analysis: any; error?: string }>(response);
+
       if (!data.success) {
         throw new Error(data.error || 'Failed to fetch analysis');
       }
-      
+
       return data.analysis;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch analysis';
@@ -139,7 +152,7 @@ export function useMonzo() {
     setError(null);
 
     try {
-      const response = await fetch('/api/monzo/match', {
+      const response = await fetch(buildFunctionsUrl('/monzo/match'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,16 +165,22 @@ export function useMonzo() {
         }),
       });
       
-      const data = await response.json();
-      
+      const data = await parseJsonResponse<{
+        success: boolean;
+        potentialMatches: MonzoTransaction[];
+        confidence: number;
+        reasoning: string;
+        error?: string;
+      }>(response);
+
       if (!data.success) {
         throw new Error(data.error || 'Failed to match transactions');
       }
-      
+
       return {
         potentialMatches: data.potentialMatches,
         confidence: data.confidence,
-        reasoning: data.reasoning,
+        reasoning: data.reasoning
       };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to match transactions';

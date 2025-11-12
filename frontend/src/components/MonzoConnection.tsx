@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, CreditCard, CheckCircle, AlertCircle, TrendingUp } from 'lucide-react';
+import { buildFunctionsUrl, parseJsonResponse } from '@/utils/functionsClient';
 
 interface MonzoTokens {
   access_token: string;
@@ -70,8 +71,8 @@ export default function MonzoConnection({ onConnectionStatusChange }: MonzoConne
       setIsConnecting(true);
       setError(null);
 
-      const response = await fetch('/api/monzo/auth');
-      const data = await response.json();
+      const response = await fetch(buildFunctionsUrl('/monzo/auth'));
+      const data = await parseJsonResponse<{ success: boolean; authUrl: string; error?: string }>(response);
 
       if (data.success) {
         // Redirect to Monzo OAuth
@@ -104,8 +105,14 @@ export default function MonzoConnection({ onConnectionStatusChange }: MonzoConne
     try {
       setIsLoadingAnalysis(true);
       
-      const response = await fetch(`/api/monzo/transactions?access_token=${accessToken}&account_id=${accountId}&type=analysis&days=30`);
-      const data = await response.json();
+      const params = new URLSearchParams({
+        access_token: accessToken,
+        account_id: accountId,
+        type: 'analysis',
+        days: '30'
+      });
+      const response = await fetch(`${buildFunctionsUrl('/monzo/transactions')}?${params.toString()}`);
+      const data = await parseJsonResponse<{ success: boolean; analysis: MonzoAnalysis; error?: string }>(response);
 
       if (data.success) {
         setAnalysis(data.analysis);

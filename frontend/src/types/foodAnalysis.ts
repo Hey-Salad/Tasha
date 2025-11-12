@@ -51,10 +51,19 @@ export interface FoodVoiceAnalysis {
   conversation_summary: string;
 }
 
+export interface VoiceToolCall {
+  id: string;
+  name: string;
+  input?: Record<string, any>;
+  output?: Record<string, any>;
+}
+
 export interface VoiceConversation {
   id: string;
   transcript: string;
   analysis: FoodVoiceAnalysis;
   audioUrl?: string;
   timestamp: string;
+  agentResponse?: string;
+  toolCalls?: VoiceToolCall[];
 }

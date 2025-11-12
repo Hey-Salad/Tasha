@@ -1,13 +1,24 @@
 // services/ElevenLabsService.ts
-// 11Labs Voice Assistant Integration proxied through Firebase Functions
+// 11Labs Voice Assistant Integration proxied through Next.js API routes
 
-import type { FoodVoiceAnalysis, VoiceConversation, VoiceSessionConfig } from '../types/foodAnalysis';
+import type {
+  FoodVoiceAnalysis,
+  VoiceConversation,
+  VoiceSessionConfig,
+  VoiceToolCall
+} from '../types/foodAnalysis';
+import { buildFunctionsUrl, parseJsonResponse } from '../utils/functionsClient';
 
 class ElevenLabsVoiceService {
-  private apiBase = '/api/voice';
+  private apiBase = '/voice';
+
+  private buildUrl(path: string) {
+    const normalized = path.startsWith('/') ? path : `/${path}`;
+    return buildFunctionsUrl(`${this.apiBase}${normalized}`);
+  }
 
   async startVoiceSession(config: VoiceSessionConfig = {}): Promise<string> {
-    const response = await fetch(`${this.apiBase}/session`, {
+    const response = await fetch(this.buildUrl('/session'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -15,17 +26,21 @@ class ElevenLabsVoiceService {
       body: JSON.stringify(config)
     });
 
-    const data = await response.json();
-    if (!response.ok || !data.success) {
+    const data = await parseJsonResponse<{ success: boolean; conversationId: string; error?: string }>(response);
+    if (!data.success || !data.conversationId) {
       throw new Error(data.error || 'Failed to start voice session');
     }
 
-    return data.conversationId as string;
+    return data.conversationId;
   }
 
-  async sendVoiceInput(conversationId: string, audioBlob: Blob, userMessage?: string): Promise<VoiceConversation> {
+  async sendVoiceInput(
+    conversationId: string,
+    audioBlob: Blob,
+    userMessage?: string
+  ): Promise<VoiceConversation> {
     const audioBase64 = await this.blobToBase64(audioBlob);
-    const response = await fetch(`${this.apiBase}/audio`, {
+    const response = await fetch(this.buildUrl('/audio'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -38,25 +53,34 @@ class ElevenLabsVoiceService {
       })
     });
 
-    const data = await response.json();
-    if (!response.ok || !data.success) {
+    const data = await parseJsonResponse<{ success: boolean; data?: any; error?: string }>(response);
+    if (!data.success) {
       throw new Error(data.error || 'Failed to process voice input');
     }
 
-    const transcript = data.data?.transcript || userMessage || '';
-    const analysis = await this.analyzeFoodConversation(transcript);
+    const payload = data.data ?? {};
+    const transcript = payload.transcript || userMessage || '';
+    const agentResponse = payload.agentResponse || payload.agent_response || '';
+    const audioUrl = payload.audioUrl || payload.audio_url;
+    const toolCalls = (payload.toolCalls || payload.tool_calls || []) as VoiceToolCall[];
+
+    const analysis =
+      payload.analysis ??
+      (await this.analyzeFoodConversation(`${transcript} ${agentResponse}`.trim()));
 
     return {
       id: conversationId,
       transcript,
       analysis,
-      audioUrl: data.data?.audio_url,
-      timestamp: new Date().toISOString()
+      audioUrl,
+      timestamp: new Date().toISOString(),
+      agentResponse,
+      toolCalls
     };
   }
 
   async textToSpeech(text: string, voiceId?: string, config: VoiceSessionConfig = {}): Promise<Blob> {
-    const response = await fetch(`${this.apiBase}/tts`, {
+    const response = await fetch(this.buildUrl('/tts'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -64,8 +88,8 @@ class ElevenLabsVoiceService {
       body: JSON.stringify({ text, voiceId, config })
     });
 
-    const data = await response.json();
-    if (!response.ok || !data.success || !data.audioBase64) {
+    const data = await parseJsonResponse<{ success: boolean; audioBase64?: string; error?: string }>(response);
+    if (!data.success || !data.audioBase64) {
       throw new Error(data.error || 'Failed to generate speech');
     }
 

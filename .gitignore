@@ -31,9 +31,12 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# Local env files
-.env*.local
+# Local env files (all variants)
 .env
+.env.*
+!.env.example
+!.env.sample
+.env*.local
 
 # TypeScript
 *.tsbuildinfo
@@ -75,3 +78,7 @@ pids/
 # Backup directories
 frontend/frontend_backup/
 *_backup/
+
+# Markdown files (except README.md)
+*.md
+!README.md

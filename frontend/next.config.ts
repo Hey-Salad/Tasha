@@ -1,32 +1,32 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable static export for Firebase hosting
-  output: 'export',
-  
-  // Add trailing slashes for better routing
-  trailingSlash: true,
-  
-  // Optimize images for static export
-  images: {
-    unoptimized: true
-  },
-  
-  // Disable ESLint during builds for deployment
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true
   },
-  
-  // Disable TypeScript checking during builds (optional)
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: true
   },
-  
-  // Optional: Configure base path if deploying to subdirectory
-  // basePath: '',
-  
-  // Optional: Asset prefix for CDN
-  // assetPrefix: '',
+  webpack: (config, { isServer }) => {
+    // Ensure crypto libraries are only bundled on server side
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        crypto: false,
+        stream: false,
+        buffer: false,
+      };
+    }
+
+    return config;
+  },
+  // Ensure server-only modules are not bundled in client
+  experimental: {
+    serverComponentsExternalPackages: [
+      '@polkadot/util-crypto',
+      '@polkadot/keyring',
+    ],
+  },
 };
 
 export default nextConfig;

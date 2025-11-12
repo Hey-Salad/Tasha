@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, CheckCircle, AlertTriangle, CreditCard, Coins } from 'lucide-react';
 import { useMonzo } from '@/hooks/useMonzo';
+import { buildFunctionsUrl, parseJsonResponse } from '@/utils/functionsClient';
 
 interface MonzoTransaction {
   id: string;
@@ -87,7 +88,7 @@ export default function EnhancedWasteLogging({ onLogWaste }: EnhancedWasteLoggin
     // Placeholder for AI verification using your existing Gemini/OpenAI services
     // This would analyze the waste description and amount for reasonableness
     try {
-      const response = await fetch('/api/ai/verify-waste', {
+      const response = await fetch(buildFunctionsUrl('/ai/verify-waste'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -98,9 +99,8 @@ export default function EnhancedWasteLogging({ onLogWaste }: EnhancedWasteLoggin
         })
       });
 
-      if (response.ok) {
-        return await response.json();
-      }
+      const data = await parseJsonResponse<{ confidence?: number; reasoning?: string; flags?: string[] }>(response);
+      return data;
     } catch (error) {
       console.error('AI verification failed:', error);
     }
