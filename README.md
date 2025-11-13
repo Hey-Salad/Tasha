@@ -8,7 +8,7 @@
 [![React](https://img.shields.io/badge/React-19-blue)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 
-**🚀 Live Demo:** [https://tasha.heysalad.app/](https://tasha.heysalad.app/)
+**🚀 Live Demo:** [https://frontend-tau-one-38.vercel.app/](https://frontend-tau-one-38.vercel.app/)
 
 ### 🌟 Transform Food Analysis Into Digital Value
 
