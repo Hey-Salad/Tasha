@@ -264,8 +264,8 @@ Google Gemini API key
 ### Quick Start
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/polkadot-hackathon.git
-cd polkadot-hackathon/frontend
+git clone https://github.com/Hey-Salad/Tasha.git
+cd Tasha/frontend
 
 # Install dependencies
 npm install
@@ -359,7 +359,7 @@ We welcome contributions from developers interested in sustainability and blockc
 ### Getting Started
 ```bash
 # Fork the repository
-git fork https://github.com/your-username/polkadot-hackathon.git
+git fork https://github.com/Hey-Salad/Tasha.git
 
 # Create feature branch
 git checkout -b feature/amazing-feature
@@ -442,8 +442,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **📧 Contact**: peter@heysalad.io
 
 ### Development
-- **🐛 Issues**: [GitHub Issues](https://github.com/your-username/polkadot-hackathon/issues)
-- **💡 Discussions**: [GitHub Discussions](https://github.com/your-username/polkadot-hackathon/discussions)
+- **🐛 Issues**: [GitHub Issues](https://github.com/Hey-Salad/Tasha/issues)
+- **💡 Discussions**: [GitHub Discussions](https://github.com/Hey-Salad/Tasha/discussions)
 
 ---
 
@@ -453,58 +453,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Built with ❤️ for the Polkadot ecosystem
 
-[⭐ Star this repo](https://github.com/your-username/polkadot-hackathon) • [🍴 Fork it](https://github.com/your-username/polkadot-hackathon/fork) • [🚀 Try the demo](https://tasha.heysalad.app/)
-
-</div> Lucide React icons
-- 📱 Ensure mobile responsiveness
-- 🧪 Add tests for new features
-- 📝 Update documentation
-
-### Getting Started
-```bash
-# Fork the repository
-git fork https://github.com/your-username/polkadot-hackathon.git
-
-# Create feature branch
-git checkout -b feature/amazing-feature
-
-# Make your changes
-# Commit and push
-# Open Pull Request
-```
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 📞 Contact & Links
-
-### Team
-- **Lead Developer**: [@chilumbam](https://github.com/chilu18)
-- **Organization**: SALADHR TECHNOLOGY LTD
-
-### Project Links
-- **🌐 Live App**: [https://tasha.heysalad.app/](https://tasha.heysalad.app/)
-- **📱 Main Website**: [https://heysalad.io/](https://heysalad.io/)
-- **🤖 AI Platform**: [https://ai.heysalad.app/](https://ai.heysalad.app/)
-- **📧 Contact**: peter@heysalad.io
-
-### Development
-- **🐛 Issues**: [GitHub Issues](https://github.com/your-username/polkadot-hackathon/issues)
-- **💡 Discussions**: [GitHub Discussions](https://github.com/your-username/polkadot-hackathon/discussions)
-
----
-
-<div align="center">
-
-**🥗 Making food analysis accessible through AI and blockchain technology! 🌱**
-
-Built with ❤️ for the Polkadot ecosystem
-
-[⭐ Star this repo](https://github.com/your-username/polkadot-hackathon) • [🍴 Fork it](https://github.com/your-username/polkadot-hackathon/fork) • [🚀 Try the demo](https://tasha.heysalad.app/)
+[⭐ Star this repo](https://github.com/Hey-Salad/Tasha) • [🍴 Fork it](https://github.com/Hey-Salad/Tasha/fork) • [🚀 Try the demo](https://tasha.heysalad.app/)
 
 </div>
