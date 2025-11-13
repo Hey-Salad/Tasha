@@ -42,7 +42,7 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 - **Styling**: Custom CSS with HeySalad dark theme system
 - **UI Components**: Professional Lucide React icons
 - **Fonts**: Google Fonts (Grandstander + Figtree)
-- **Deployment**: Firebase Hosting
+- **Deployment**: Vercel (Next.js App Router with serverless API routes)
 
 ### Blockchain Integration
 - **Network**: Polkadot Westend Testnet
@@ -51,8 +51,8 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 
 ### AI & Voice Integration
 - **AI Analysis**: Google Gemini API for food image analysis
-- **Voice Interface**: 11Labs for conversational interactions (ready for integration)
-- **Backend**: Firebase + Supabase architecture planned
+- **Voice Interface**: 11Labs agentic workflow with custom tool-calls for waste logging + wallet coaching
+- **Serverless Backend**: Next.js API routes running on Vercel (Supabase persistent storage planned)
 - **Banking**: Monzo API for transaction verification (in development)
 
 ---
@@ -139,7 +139,7 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 ### 🛠️ Next Phase Features
 - **🎤 Voice Assistant Page**: 11Labs integration for voice logging
 - **🤖 Enhanced AI**: Integration with 11Labs conversational AI
-- **💾 Firebase Backend**: Data persistence and user profiles
+- **💾 Supabase / Durable Storage**: Persistent data + user profiles
 - **⚡ Token Minting**: Actual blockchain token creation
 - **🔐 Advanced Authentication**: Multi-factor wallet security
 
@@ -170,17 +170,17 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 - Custom analysis pipelines
 
 // Blockchain
-- @polkadot/api
+- polkadot-api (PAPI)
 - @polkadot/extension-dapp
 - Westend Testnet Integration
 
 // Deployment
-- Firebase Hosting
+- Vercel (Next.js App Router)
 - Custom Domain: tasha.heysalad.app
 ```
 
 ### Architecture Decisions
-- **Static Export**: Using Next.js static export for Firebase hosting
+- **Serverless Rendering**: Next.js App Router deployed on Vercel with API routes for ElevenLabs, Monzo, and Gemini
 - **Client-Side Wallet**: Browser extension integration for security
 - **Persistent State**: localStorage for wallet connection persistence
 - **Message Signing**: Cryptographic authentication for feature access
@@ -200,14 +200,18 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 
 ### Environment Setup
 ```bash
-# Required API Keys
-NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_key_here
-NEXT_PUBLIC_ELEVENLABS_API_KEY=your_elevenlabs_key_here
-NEXT_PUBLIC_ELEVENLABS_AGENT_ID=your_agent_id_here
+# Client-side
+NEXT_PUBLIC_CONTRACT_ADDRESS=0xYourContract
+NEXT_PUBLIC_RPC_ENDPOINT=wss://westend-asset-hub-rpc.polkadot.io
 
-# Optional for future features
-NEXT_PUBLIC_MONZO_CLIENT_ID=your_monzo_client_id
-NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_key
+# Server-side (do NOT prefix with NEXT_PUBLIC)
+ELEVENLABS_API_KEY=sk-...
+ELEVENLABS_AGENT_ID=agent_...
+ELEVENLABS_VOICE_ID=pNInz6obpgDQGcFmaJgB
+GEMINI_API_KEY=AIza...
+MONZO_CLIENT_ID=oauth2client_....
+MONZO_CLIENT_SECRET=mnzpub....
+MONZO_REDIRECT_URI=https://tasha.heysalad.app/auth/monzo
 ```
 
 ---
@@ -276,7 +280,7 @@ npm run dev
 
 ### 🔄 In Progress
 - [ ] **Voice Assistant Page** - 11Labs voice integration
-- [ ] **Firebase Backend** - Data management system
+- [ ] **Supabase Backend** - Data management system
 - [ ] **Token Minting** - Actual blockchain token creation
 - [ ] **Advanced Analytics** - Food waste tracking over time
 
@@ -325,32 +329,53 @@ git fork https://github.com/your-username/polkadot-hackathon.git
 # Create feature branch
 git checkout -b feature/amazing-feature
 
+# Install dependencies
+cd frontend
+npm install
+
+# Start the dev server
+npm run dev
+
 # Make your changes
 # Commit and push
 # Open Pull Request
 ```
 
-### Firebase Functions
-```bash
-# Install Function dependencies
-cd frontend/functions
-npm install
+### Environment Variables & Deployment (Vercel)
 
-# Build locally
-npm run build
+| Scope            | Variable                  | Description / Example                                           |
+| ---------------- | ------------------------- | ---------------------------------------------------------------- |
+| **Client**       | `NEXT_PUBLIC_CONTRACT_ADDRESS` | FoodWasteToken contract on Westend                                |
+|                  | `NEXT_PUBLIC_RPC_ENDPOINT`     | Asset Hub RPC WebSocket URL                                      |
+|                  | `NEXT_PUBLIC_FUNCTIONS_BASE_URL` *(optional)* | Override API base when hitting a custom backend/emulator |
+| **Server**       | `ELEVENLABS_API_KEY`             | Secret key for ElevenLabs ConvAI                                 |
+|                  | `ELEVENLABS_AGENT_ID`            | Agent to use for signed WebSocket URLs                           |
+|                  | `ELEVENLABS_VOICE_ID` *(optional)* | Default voice for TTS                                            |
+|                  | `GEMINI_API_KEY`                 | Google Gemini key used for media analysis                        |
+|                  | `MONZO_CLIENT_ID`                | OAuth client id from Monzo developer portal                      |
+|                  | `MONZO_CLIENT_SECRET`            | OAuth secret                                                     |
+|                  | `MONZO_REDIRECT_URI`             | e.g. `https://tasha.heysalad.app/auth/monzo`                     |
 
-# Configure secrets (example)
-firebase functions:config:set \
-  monzo.client_id="..." monzo.client_secret="..." monzo.redirect_uri="https://tasha.heysalad.app/auth/monzo" \
-  gemini.api_key="..." \
-  elevenlabs.api_key="..." elevenlabs.agent_id="..."
+Local development: create `frontend/.env.local` and add the client + server variables (no `NEXT_PUBLIC` prefix for secrets).  
+Vercel: set the **Root Directory** to `frontend`, then add the same variables in the Vercel dashboard (Project Settings → Environment Variables).
 
-# Deploy API
-firebase deploy --only functions
-```
+Deploy checklist:
+1. Push to GitHub (Vercel automatically builds from `frontend`).
+2. Or deploy manually:
+   ```bash
+   cd frontend
+   npm install
+   npm run build    # optional verification
+   vercel           # link project, choose frontend as root
+   vercel --prod    # promote to production when ready
+   ```
+
+> The Next.js API routes now handle all ElevenLabs, Gemini, and Monzo traffic, so the browser never touches your secret keys.
 
 ### Testing
 ```bash
+cd frontend
+
 # Unit tests
 npm test
 

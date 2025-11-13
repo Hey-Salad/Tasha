@@ -242,7 +242,7 @@ const checkMobile = () => {
 
 ```
 Frontend: Next.js 15 with React 19
-Blockchain: Polkadot Asset-Hub via @polkadot/api
+Blockchain: Polkadot Asset-Hub via polkadot-api (PAPI)
 Voice: 11Labs conversational AI
 AI Analysis: Google Gemini
 Banking: Monzo API
@@ -255,7 +255,7 @@ Deployment: Firebase Hosting
 ```json
 "next": "15.3.1" ✓
 "react": "^19.0.0" ✓
-"@polkadot/api": "^15.10.2" ✓
+"polkadot-api": "^1.20.x" ✓
 "@11labs/react": "^0.1.3" ✓
 "@polkadot/extension-dapp": "^0.58.10" ✓
 ```

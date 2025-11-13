@@ -347,7 +347,7 @@ Waste tracking dashboard
 | Frontend | React/Next.js | ✅ Next.js 15 + React 19 | ✅ **MATCH** |
 | Voice Tech | 11Labs | ✅ 11Labs Agent API | ✅ **MATCH** |
 | AI Verification | Microsoft Azure AI | ⚠️ Google Gemini 2.0 Flash | 🟡 **SUBSTITUTION** |
-| Blockchain | Polkadot Asset-Hub | ✅ @polkadot/api v15.10.2 | ✅ **MATCH** |
+| Blockchain | Polkadot Asset-Hub | ✅ polkadot-api (PAPI) v1.20.x | ✅ **MATCH** |
 | Backend | Node.js | ✅ Firebase Functions (Node.js) | ✅ **MATCH** |
 | Banking API | Monzo | ✅ Monzo OAuth 2.0 | ✅ **MATCH** |
 | Maps | Google Maps | ❌ Not yet (Milestone 2) | 🟡 **M2** |
