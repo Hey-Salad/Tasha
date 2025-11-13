@@ -153,6 +153,36 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 
 ---
 
+## �  Polkadot PAPI Integration
+
+### Latest Implementation (Updated November 2025)
+
+This project uses the **latest Polkadot API (PAPI)** for blockchain interactions:
+
+**Core PAPI Packages:**
+- `polkadot-api` v1.20.5 - Main API client
+- `@polkadot-api/ws-provider` v0.7.4 - WebSocket provider
+- `@polkadot-api/pjs-signer` v0.6.17 - Wallet signer integration
+- `@polkadot-api/descriptors` - Auto-generated typed APIs
+
+**Features Implemented:**
+- ✅ Typed APIs with Asset Hub descriptors
+- ✅ Modern client initialization with `createClient()`
+- ✅ Wallet integration (Polkadot.js, Talisman, SubWallet)
+- ✅ Transaction signing with `signSubmitAndWatch()`
+- ✅ Asset minting on Westend Asset Hub
+- ✅ Real-time balance queries
+- ✅ Persistent wallet sessions
+
+**Key Files:**
+- `src/hooks/usePolkadotWallet.ts` - Main wallet hook
+- `src/services/PolkadotTokenService.ts` - Token minting service
+- `.papi/` - Generated descriptors and metadata
+
+See `frontend/PAPI_UPDATE_SUMMARY.md` for detailed implementation notes.
+
+---
+
 ## 🔧 Technical Implementation
 
 ### Current Stack
@@ -169,10 +199,13 @@ HeySalad Tasha is an innovative AI-powered platform that combines food analysis 
 - 11Labs API (Voice - Ready)
 - Custom analysis pipelines
 
-// Blockchain
-- polkadot-api (PAPI)
-- @polkadot/extension-dapp
-- Westend Testnet Integration
+// Blockchain (Latest PAPI - Updated Nov 2025)
+- polkadot-api v1.20.5 (Latest)
+- @polkadot-api/ws-provider v0.7.4
+- @polkadot-api/pjs-signer v0.6.17
+- @polkadot/extension-dapp v0.62.4
+- Westend Asset Hub Integration
+- Typed APIs with Asset Hub descriptors
 
 // Deployment
 - Vercel (Next.js App Router)
@@ -271,6 +304,8 @@ npm run dev
 ### ✅ Completed Features
 - [x] **Professional Dark Theme** - Complete black interface
 - [x] **Wallet Integration** - Polkadot wallet connection with persistence
+- [x] **Latest PAPI Integration** - Updated to polkadot-api v1.20.5 (Nov 2025)
+- [x] **Asset Hub Support** - Full typed API integration for FWT token minting
 - [x] **Mobile Camera** - Native iOS/Android camera support
 - [x] **AI Food Analysis** - Google Gemini integration
 - [x] **Swipeable Results** - Card-based mobile UX
