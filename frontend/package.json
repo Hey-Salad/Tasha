@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --dir tests/integration",
-    "test:e2e": "node scripts/run-e2e-placeholder.cjs"
+    "test:e2e": "node scripts/run-e2e-placeholder.cjs",
+    "postinstall": "papi"
   },
   "dependencies": {
     "@11labs/react": "^0.1.3",

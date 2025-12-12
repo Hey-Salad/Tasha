@@ -2,7 +2,22 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### Installation
+
+```bash
+npm install
+```
+
+The `postinstall` script will automatically run `papi` to generate Polkadot API descriptors.
+
+**Note:** If you encounter build errors about missing `@polkadot-api/descriptors`, run:
+```bash
+npx papi
+```
+
+### Development
+
+Run the development server:
 
 ```bash
 npm run dev

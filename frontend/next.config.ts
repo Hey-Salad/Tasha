@@ -21,12 +21,10 @@ const nextConfig: NextConfig = {
     return config;
   },
   // Ensure server-only modules are not bundled in client
-  experimental: {
-    serverComponentsExternalPackages: [
-      '@polkadot/util-crypto',
-      '@polkadot/keyring',
-    ],
-  },
+  serverExternalPackages: [
+    '@polkadot/util-crypto',
+    '@polkadot/keyring',
+  ],
 };
 
 export default nextConfig;
