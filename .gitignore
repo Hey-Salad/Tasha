@@ -81,4 +81,10 @@ frontend/frontend_backup/
 
 # Markdown files (except README.md)
 *.md
-!README.md
+!README.mdgoogle-credentials.json
+*service-account*.json
+*credentials*.json
+*credentials*.json.backup
+.npmrc
+venv/
+.venv/
