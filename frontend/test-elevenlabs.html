@@ -16,7 +16,10 @@
         let audioContext = null;
         let mediaStream = null;
 
-        const API_KEY = '<redacted api-key …53f4>';
+        // Local-only test page. The key is never tracked: set it once in the browser console with
+        //   localStorage.setItem('ELEVENLABS_API_KEY', '...')
+        // Production must mint signed URLs server-side; never ship an xi-api-key to a client.
+        const API_KEY = localStorage.getItem('ELEVENLABS_API_KEY') || '';
         const AGENT_ID = 'Nnwf6EF9RgYOj6c1a9VU';
 
         function log(msg) {
@@ -32,6 +35,10 @@
         }
 
         async function getSignedUrl() {
+            if (!API_KEY) {
+                setStatus('No ElevenLabs API key configured. In the console run localStorage.setItem("ELEVENLABS_API_KEY", "<your key>") and reload.');
+                throw new Error('ELEVENLABS_API_KEY not configured');
+            }
             const response = await fetch(
                 `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${AGENT_ID}`,
                 {
